@@ -50,7 +50,7 @@ let cloud = null;
 function enterMap(id, x, y, dir) {
   mapId = id; MAP = MAPS[id]; tilesNow = MAP.tiles.map((r) => r.split(''));
   for (const [k, v] of Object.entries((S.mapEdits || {})[id] || {})) { const [tx, ty] = k.split(',').map(Number); tilesNow[ty][tx] = v; }
-  P.x = x; P.y = y; P.dir = dir || P.dir; P.moving = null; P.trail = [];
+  P.x = x; P.y = y; P.dir = dir || P.dir; P.moving = null; P.trail = Array.from({ length: 8 }, () => [x, y, P.dir]);    // the party starts gathered on the leader
   S.map = id; S.x = x; S.y = y; S.dir = P.dir;
   npcState = new Map();
   if (MAP.place && (MAP.town || MAP.save)) { S.visited = S.visited || []; if (!S.visited.includes(MAP.place.id)) S.visited.push(MAP.place.id); }
@@ -465,7 +465,8 @@ function fieldSprites(camX, camY) {
   // the party: the leader, followers in a line, the wagon at the back (chapter 5, outdoors)
   const ids = S.active.filter((id) => S.members[id].hp > 0), followers = Math.min(ids.length - 1, 3);
   const showWagon = S.ch === 5 && S.wagon.length && !MAP.dungeon;
-  const pos = (k) => { if (k === 0) return [camX, camY, P.dir]; const tr = P.trail[k - 1]; if (!tr) return null; const prev = k === 1 ? [P.x, P.y] : P.trail[k - 2]; const t = P.moving ? P.moving.t : 1; return [tr[0] + (prev[0] - tr[0]) * (P.moving ? t : 0), tr[1] + (prev[1] - tr[1]) * (P.moving ? t : 0), tr[2]]; };
+  // follower k walks from its own spot (trail[k]) to the next one up the line (trail[k - 1]) while the leader takes a step
+  const pos = (k) => { if (k === 0) return [camX, camY, P.dir]; const to = P.trail[k - 1]; if (!to) return null; const from = P.trail[k] || to, t = P.moving ? P.moving.t : 1; return [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t, from === to ? to[2] : from[2]]; };
   for (let k = followers + (showWagon ? 1 : 0); k >= 0; k--) {
     const q = pos(k); if (!q) continue;
     const [x, y, d] = q, wag = k === followers + 1 && showWagon;
