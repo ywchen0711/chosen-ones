@@ -1,7 +1,7 @@
 // Battles in the classic first-person style: monsters in front, the party's status above, messages below.
 import { T, EN } from './i18n.js';
-import { MONSTERS, SPELLS, ITEMS, CHARS } from './data.js';
-import { atk, defense, alive, gainXp, bagTake } from './party.js';
+import { MONSTERS, SPELLS, ITEMS, CHARS, GOLD_RATE } from './data.js';
+import { atk, defense, alive, gainXp, bagTake, agiOf, hasFx } from './party.js';
 import { monster as monsterArt, backdrop } from './art.js';
 import { box, text, say, menu, S as SC, VW } from './ui.js';
 
@@ -170,8 +170,8 @@ async function memberAct(G, B, m, c) {
   if (c.type === 'attack') {
     let t = c.t; if (!t || t.hp <= 0 || t.gone) t = pick(liveMons(B)); if (!t) return;
     G.sfx('hit'); await msg(T(`${nm(m)}的攻擊！`, `${nm(m)} attacks!`));
-    const crit = Math.random() < (CHARS[m.id].crit ? 1 / CHARS[m.id].crit : 1 / 32);
-    if (!crit && Math.random() < 0.03 + Math.max(0, t.d.agi - m.agi) / 500) { await msg(T(`${t.label}閃開了！`, `${t.label} dodges!`)); return; }
+    const crit = Math.random() < Math.max(CHARS[m.id].crit ? 1 / CHARS[m.id].crit : 1 / 32, hasFx(m, 'crit') ? 1 / 8 : 0);
+    if (!crit && Math.random() < 0.03 + Math.max(0, t.d.agi - agiOf(m)) / 500) { await msg(T(`${t.label}閃開了！`, `${t.label} dodges!`)); return; }
     if (crit) await msg(T('會心一擊！', 'An excellent hit!'));
     await damageMon(G, B, t, hitMon(G, B, m, t, crit));
     return;
@@ -231,13 +231,13 @@ async function monsterAct(G, B, mo) {
     for (let k = 0; k < (act === 'double' ? 2 : 1); k++) {
       const t = target(); if (!t) return;
       await msg(k ? T(`${mo.label}再次攻擊！`, `${mo.label} attacks again!`) : T(`${mo.label}的攻擊！`, `${mo.label} attacks!`));
-      if (Math.random() < 0.03 + Math.max(0, t.agi - mo.d.agi) / 500) { await msg(T(`${nm(t)}閃開了！`, `${nm(t)} dodges!`)); continue; }
+      if (Math.random() < 0.03 + Math.max(0, agiOf(t) - mo.d.agi) / 500) { await msg(T(`${nm(t)}閃開了！`, `${nm(t)} dodges!`)); continue; }
       await damageMember(G, B, t, hitMember(t, mo.d.atk));
-      if (act === 'poison' && t.hp > 0 && Math.random() < 0.35) { t.poison = true; await msg(T(`${nm(t)}中毒了！`, `${nm(t)} is poisoned!`)); }
+      if (act === 'poison' && t.hp > 0 && !hasFx(t, 'nopoison') && Math.random() < 0.35) { t.poison = true; await msg(T(`${nm(t)}中毒了！`, `${nm(t)} is poisoned!`)); }
     }
     return;
   }
-  if (act === 'sleep') { const t = target(); await msg(T(`${mo.label}施展了睡眠！`, `${mo.label} casts Snooze!`)); if (Math.random() < 0.5) { t.sleep = ri(1, 2); await msg(T(`${nm(t)}睡著了！`, `${nm(t)} falls asleep!`)); } else await msg(T(`${nm(t)}沒有睡著。`, `${nm(t)} resists!`)); return; }
+  if (act === 'sleep') { const t = target(); await msg(T(`${mo.label}施展了睡眠！`, `${mo.label} casts Snooze!`)); if (!hasFx(t, 'nosleep') && Math.random() < 0.5) { t.sleep = ri(1, 2); await msg(T(`${nm(t)}睡著了！`, `${nm(t)} falls asleep!`)); } else await msg(T(`${nm(t)}沒有睡著。`, `${nm(t)} resists!`)); return; }
   if (act === 'roar') { await msg(T(`${mo.label}發出震天咆哮！`, `${mo.label} lets out a terrible roar!`)); for (const p of liveParty(G)) if (Math.random() < 0.35) { p.sleep = 1; await msg(T(`${nm(p)}嚇得動彈不得！`, `${nm(p)} is frozen with fear!`)); } return; }
   if (act === 'breath' || act === 'quake') {
     await msg(act === 'breath' ? T(`${mo.label}噴出了火焰！`, `${mo.label} breathes fire!`) : T(`${mo.label}撼動大地！`, `${mo.label} shakes the ground!`));
@@ -288,7 +288,7 @@ export async function battle(G, spec, opts = {}) {
     if (flee) {
       if (B.boss || opts.noFlee) await msg(T('無法逃跑！', 'You can\'t escape!'));
       else {
-        const pa = liveParty(G).reduce((s, p) => s + p.agi, 0) / Math.max(1, liveParty(G).length), ma = liveMons(B).reduce((s, m) => s + m.d.agi, 0) / Math.max(1, liveMons(B).length);
+        const pa = liveParty(G).reduce((s, p) => s + agiOf(p), 0) / Math.max(1, liveParty(G).length), ma = liveMons(B).reduce((s, m) => s + m.d.agi, 0) / Math.max(1, liveMons(B).length);
         await msg(T('一行人逃跑了……', 'The party tries to run…'));
         if (Math.random() < Math.min(0.92, 0.55 + (pa - ma) / 120 + round * 0.1)) { result = 'flee'; break; }
         await msg(T('但是被包圍了！', 'But they are blocked!'));
@@ -296,7 +296,7 @@ export async function battle(G, spec, opts = {}) {
     }
     // ---- everyone acts, fastest first
     const act = G.active(), actors = [];
-    act.forEach((m, i) => { m.defending = plan[i] && plan[i].type === 'defend'; if (!flee && plan[i]) actors.push({ who: m, c: plan[i], s: m.agi * rand(0.55, 1) }); });
+    act.forEach((m, i) => { m.defending = plan[i] && plan[i].type === 'defend'; if (!flee && plan[i]) actors.push({ who: m, c: plan[i], s: agiOf(m) * rand(0.55, 1) }); });
     for (const mo of liveMons(B)) actors.push({ who: mo, s: mo.d.agi * rand(0.55, 1) });
     actors.sort((a, b) => b.s - a.s);
     for (const a of actors) {
@@ -322,21 +322,30 @@ export async function battle(G, spec, opts = {}) {
       const fresh = G.wagonAlive();
       if (fresh.length && !G.inDungeon()) { await say(T('馬車裡的夥伴衝了出來！', 'The companions in the wagon rush out!')); G.swapInFromWagon(); }
       else result = 'lose';
-    } else for (const p of liveParty(G)) if (p.poison) { const n = Math.max(1, Math.floor(p.maxhp / 16)); p.hp = Math.max(1, p.hp - n); }
+    } else for (const p of liveParty(G)) {
+      if (p.poison) { const n = Math.max(1, Math.floor(p.maxhp / 16)); p.hp = Math.max(1, p.hp - n); }
+      // equipment that heals at the end of each round
+      if (hasFx(p, 'regen') && p.hp < p.maxhp) { const n = Math.min(p.maxhp - p.hp, Math.max(1, Math.floor(p.maxhp / 12))); p.hp += n; pop(B, p, n, '#7fff8a'); }
+      if (hasFx(p, 'mpregen') && p.mp < p.maxmp) p.mp = Math.min(p.maxmp, p.mp + 3);
+    }
   }
   // ---- after the battle
   if (result === 'win') {
     G.music('win');
     const beaten = B.mons.filter((m) => !m.fled);
-    const xp = beaten.reduce((s, m) => s + m.d.xp, 0), gold = Math.round(beaten.reduce((s, m) => s + m.d.gold, 0) * (G.active().some((p) => p.id === 'tolle') ? 1.25 : 1));
+    const xp = beaten.reduce((s, m) => s + m.d.xp, 0), gold = Math.round(beaten.reduce((s, m) => s + m.d.gold, 0) * GOLD_RATE * (G.active().some((p) => p.id === 'tolle') ? 1.25 : 1) * (G.active().some((p) => hasFx(p, 'gold')) ? 1.25 : 1));
     if (opts.victory) await say(opts.victory);
     else await say(T(`打倒了所有的怪物！`, 'All the monsters are defeated!'), { auto: 0.8 });
     const fighters = liveParty(G), share = Math.max(1, Math.floor(xp / Math.max(1, fighters.length)));
     if (xp) await say(T(`每個人獲得了 ${share} 點經驗值。`, `Each member earns ${share} experience.`));
     if (gold) { G.addGold(gold); await say(T(`得到了 ${gold} 枚金幣。`, `Found ${gold} gold.`)); }
-    for (const m of beaten) if (m.d.drop && Math.random() < 1 / m.d.drop[1]) { G.give(m.d.drop[0]); await say(T(`${m.label}留下了${T(ITEMS[m.d.drop[0]].name)}！`, `${m.label} dropped a ${T(ITEMS[m.d.drop[0]].name)}!`)); }
+    // treasure: each monster's drop table (a Lucky Bell doubles the chances)
+    const luck = G.active().some((p) => hasFx(p, 'luck')) ? 2 : 1;
+    for (const m of beaten) for (const [it, n] of m.d.drops || (m.d.drop ? [m.d.drop] : [])) if (Math.random() < Math.min(1, luck / n)) {
+      G.give(it); G.sfx('item'); await say(T(`${m.label}留下了${T(ITEMS[it].name)}！`, `${m.label} dropped a ${T(ITEMS[it].name)}!`));
+    }
     for (const p of [...fighters, ...G.wagonAlive()]) {
-      for (const up of gainXp(p, share)) {
+      for (const up of gainXp(p, hasFx(p, 'xp') ? Math.round(share * 1.15) : share)) {
         G.sfx('levelup');
         await say(T(`${nm(p)}升到了第 ${up.lv} 級！`, `${nm(p)} reaches level ${up.lv}!`));
         const g = up.gain; await say(T(`HP +${g.maxhp}  MP +${g.maxmp}  力量 +${g.str}  防禦 +${g.def}  速度 +${g.agi}`, `HP +${g.maxhp}  MP +${g.maxmp}  STR +${g.str}  DEF +${g.def}  AGI +${g.agi}`), { auto: 1.2 });

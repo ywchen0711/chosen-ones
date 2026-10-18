@@ -1,6 +1,6 @@
 // node tools/test.mjs — the data and every map: sizes, tiles, people on open ground, every place reachable, battles winnable at sensible levels
 import { buildMaps, TILE, WALK, PLACES, BARRIERS, CHAPTERS, WW, WH, worldZone } from '../js/maps.js';
-import { CHARS, ITEMS, SPELLS, MONSTERS, ZONES, canEquip } from '../js/data.js';
+import { CHARS, ITEMS, SPELLS, MONSTERS, ZONES, canEquip, SLOTS, FX } from '../js/data.js';
 import { newMember, gainXp, atk, defense } from '../js/party.js';
 
 let fails = 0;
@@ -58,6 +58,18 @@ for (const [boss, ps] of [['shade', [['kaldor', 7, { w: 'copper', a: 'leather', 
   ['minegolem', [['tolle', 12, { w: 'spear', a: 'chain', s: 'ishield' }]]], ['barga', [['mira', 15, { w: 'chainwhip', a: 'magicrobe' }], ['thea', 15, { w: 'chainwhip', a: 'magicrobe' }], ['orin', 15, { w: 'ironclaw', a: 'iron' }]]],
   ['solzar', [['hero', 32, { w: 'skysword', a: 'skyarmor', s: 'skyshield', h: 'skyhelm' }], ['kaldor', 32, { w: 'battleaxe', a: 'platmail', s: 'mshield', h: 'helm' }], ['rhea', 32, { w: 'demonclaw', a: 'dancer' }], ['cass', 32, { w: 'sagestaff', a: 'magicrobe', s: 'mshield' }]]]]) {
   const d = duel(party(ps), boss); console.log(`     ${boss}: ~${d.rounds} rounds to win; the weakest survives ~${d.hpRounds} hits`);
+}
+// ---- equipment and treasure
+{
+  const slots = new Set(SLOTS.map(([k]) => k)), gear = Object.entries(ITEMS).filter(([, it]) => it.slot);
+  ok('every piece of gear has a known slot, a known power and someone who can wear it', gear.every(([, it]) => slots.has(it.slot) && (!it.fx || FX[it.fx]) && Object.keys(CHARS).some((c) => canEquip(it, c))));
+  const drops = Object.values(MONSTERS).flatMap((d) => d.drops || []);
+  ok('every monster that gives experience drops something', Object.entries(MONSTERS).every(([, d]) => !d.xp || (d.drops && d.drops.length)));
+  ok('every drop is a real item with a sane chance', drops.every(([it, n]) => ITEMS[it] && n >= 1));
+  ok('bosses always drop their treasure', ['shade', 'ironclaw', 'minegolem', 'barga', 'guardian'].every((b) => MONSTERS[b].drops.some(([, n]) => n === 1)));
+  ok('each of the eight slots has gear', SLOTS.every(([k]) => gear.filter(([, it]) => it.slot === k).length >= 5), SLOTS.map(([k]) => k + gear.filter(([, it]) => it.slot === k).length).join(' '));
+  const m = newMember('kaldor', 20), base = [atk(m), defense(m)]; m.eq.g = 'powergloves'; m.eq.b = 'wingboots'; m.eq.r = 'strring';
+  ok('gauntlets, boots and rings add to attack and defence', atk(m) === base[0] + 8 + 5 && defense(m) > base[1], `${base} -> ${atk(m)},${defense(m)}`);
 }
 console.log(fails ? `test: ${fails} failed` : 'test: all passed');
 process.exit(fails ? 1 : 0);

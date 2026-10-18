@@ -1,5 +1,5 @@
 // Party members: stats from level, experience and level-ups, equipment, the shared bag. No drawing here (node can test it).
-import { CHARS, ITEMS, SPELLS, xpFor, MAX_LV, canEquip } from './data.js';
+import { CHARS, ITEMS, SPELLS, xpFor, MAX_LV, canEquip, SLOTS } from './data.js';
 
 export const statAt = (id, lv) => {
   const c = CHARS[id], f = (k) => Math.floor(c[k][0] + c[k][1] * (lv - 1));
@@ -8,10 +8,15 @@ export const statAt = (id, lv) => {
 export const spellsAt = (id, lv) => Object.entries(CHARS[id].spells).filter(([l]) => +l <= lv).map(([, s]) => s);
 export function newMember(id, lv = 1, eq = {}) {
   const st = statAt(id, lv);
-  return { id, lv, xp: xpFor(lv), hp: st.maxhp, mp: st.maxmp, ...st, eq: { w: null, a: null, s: null, h: null, ...eq }, spells: spellsAt(id, lv), poison: false };
+  return { id, lv, xp: xpFor(lv), hp: st.maxhp, mp: st.maxmp, ...st, eq: { w: null, a: null, s: null, h: null, g: null, b: null, r: null, n: null, ...eq }, spells: spellsAt(id, lv), poison: false };
 }
-export const atk = (m) => m.str + (m.eq.w ? ITEMS[m.eq.w].atk : 0);
-export const defense = (m) => m.def + ['a', 's', 'h'].reduce((s, k) => s + (m.eq[k] ? ITEMS[m.eq[k]].def : 0), 0) + Math.floor(m.agi / 4);
+// what someone wears (older saves have only some of the slots), and what it adds up to
+const gear = (m) => SLOTS.map(([k]) => m.eq[k] && ITEMS[m.eq[k]]).filter(Boolean);
+export const bonus = (m, k) => gear(m).reduce((s, it) => s + ((it.bonus && it.bonus[k]) || 0), 0);
+export const hasFx = (m, fx) => !!m.eq && gear(m).some((it) => it.fx === fx);
+export const agiOf = (m) => Math.max(1, m.agi + bonus(m, 'agi'));
+export const atk = (m) => m.str + bonus(m, 'str') + gear(m).reduce((s, it) => s + (it.atk || 0), 0);
+export const defense = (m) => m.def + bonus(m, 'def') + gear(m).reduce((s, it) => s + (it.def || 0), 0) + Math.floor(agiOf(m) / 4);
 export const alive = (m) => m.hp > 0;
 // experience: returns the level-ups that happened, each with what grew and which spells were learned
 export function gainXp(m, n) {

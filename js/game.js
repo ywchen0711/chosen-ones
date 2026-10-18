@@ -1,7 +1,7 @@
 // The engine: title, chapters, walking the world and towns, talking, menus, shops, inns, churches, saving, and the ending.
 import { T, EN, LANG, setLang } from './i18n.js';
-import { CHARS, ITEMS, SPELLS, ZONES } from './data.js';
-import { newMember, atk, defense, alive, healFull, bagAdd, bagTake, canEquip, statAt } from './party.js';
+import { CHARS, ITEMS, SPELLS, ZONES, SLOTS, FX } from './data.js';
+import { newMember, atk, defense, alive, healFull, bagAdd, bagTake, canEquip, statAt, agiOf } from './party.js';
 import { tile, person, wagon as wagonSprite, monster as monsterArt, LOOKS } from './art.js';
 import { buildMaps, TILE, WALK, PLACES, BARRIERS, worldZone, CHAPTERS, ENDING } from './maps.js';
 import { battle } from './battle.js';
@@ -176,12 +176,24 @@ async function shop(list) {
 function equipInfo(k) {
   const it = ITEMS[k]; box(150, 150, 98, 84); let y = 157;
   for (const m of members().slice(0, 5)) {
-    const can = canEquip(it, m.id), cur = m.eq[it.slot] ? ITEMS[m.eq[it.slot]] : null, d = it.slot === 'w' ? it.atk - (cur ? cur.atk : 0) : it.def - (cur ? cur.def : 0);
+    const can = canEquip(it, m.id), [da, dd] = gearDiff(m, k), up = da + dd > 0;
     text(nameOf(m.id).slice(0, EN ? 6 : 3), 157, y, { color: can ? '#fff' : '#777', size: 7 * SC });
-    text(can ? (d > 0 ? `+${d}` : String(d)) : '—', 240, y, { align: 'right', color: can ? (d > 0 ? '#7fff8a' : '#ccc') : '#777', size: 7 * SC });
+    text(can ? (da || dd ? `${da >= 0 ? '+' : ''}${da}/${dd >= 0 ? '+' : ''}${dd}` : '★') : '—', 240, y, { align: 'right', color: can ? (up ? '#7fff8a' : '#ccc') : '#777', size: 7 * SC });
     y += 14;
   }
+  itemNote(k);
 }
+// how attack / defence would change if m wore item k
+function gearDiff(m, k) { const it = ITEMS[k], t = { ...m, eq: { ...m.eq, [it.slot]: k } }; return [atk(t) - atk(m), defense(t) - defense(m)]; }
+// a line about a piece of gear: its slot, its bonuses and its special power
+function itemNote(k) {
+  const it = ITEMS[k], sl = SLOTS.find(([s]) => s === it.slot), parts = [T(sl[1], sl[2])];
+  if (it.atk) parts.push(T(`攻${it.atk}`, `ATK ${it.atk}`)); if (it.def) parts.push(T(`防${it.def}`, `DEF ${it.def}`));
+  if (it.bonus) for (const [s, v] of Object.entries(it.bonus)) parts.push(`${T({ str: '力', agi: '速', def: '防' }[s], s.toUpperCase())}+${v}`);
+  box(8, 204, 140, it.fx ? 30 : 20); text(parts.join(' '), 14, 209, { size: 7 * SC, color: '#ffe080' });
+  if (it.fx) text(T(...FX[it.fx]), 14, 220, { size: 7 * SC });
+}
+const short = (it) => (it.slot === 'w' ? String(it.atk) : it.def ? String(it.def) : '★');
 function equip(m, k) { const it = ITEMS[k]; if (!bagTake(S.bag, k)) return; const old = m.eq[it.slot]; if (old) bagAdd(S.bag, old); m.eq[it.slot] = k; }
 
 // ---------------------------------------------------------------- the field menu
@@ -237,13 +249,13 @@ async function spellMenu() {
 }
 async function equipMenu() {
   const mi = await pickMember(T('誰的裝備？', 'Whose equipment?')); if (mi < 0) return;
-  const m = members()[mi], slots = [['w', T('武器', 'Weapon')], ['a', T('鎧甲', 'Armour')], ['s', T('盾牌', 'Shield')], ['h', T('頭盔', 'Helmet')]];
+  const m = members()[mi], slots = SLOTS.map(([k, zh, en]) => [k, T(zh, en)]);
   for (;;) {
-    const close = UI.panel(() => { box(8, 150, 240, 82); text(nameOf(m.id), 16, 156, { color: '#ffe080' }); text(`${T('攻擊力', 'Attack')} ${atk(m)}`, 16, 172); text(`${T('防禦力', 'Defence')} ${defense(m)}`, 16, 186); text(`Lv ${m.lv}`, 16, 200); });
-    const si = await menu(slots.map(([k, l]) => ({ label: l, right: m.eq[k] ? T(ITEMS[m.eq[k]].name) : '—' })), { x: 8, y: 40, w: 240 });
+    const close = UI.panel(() => { box(8, 176, 240, 56); text(`${nameOf(m.id)}  Lv ${m.lv}`, 16, 182, { color: '#ffe080' }); text(`${T('攻擊力', 'Attack')} ${atk(m)}   ${T('防禦力', 'Defence')} ${defense(m)}`, 16, 198); text(`${T('速度', 'Agility')} ${agiOf(m)}`, 16, 212); });
+    const si = await menu(slots.map(([k, l]) => ({ label: l, right: m.eq[k] ? T(ITEMS[m.eq[k]].name) : '—' })), { x: 8, y: 8, w: 240 });
     close(); if (si < 0) return;
     const slot = slots[si][0], opts = Object.keys(S.bag).filter((k) => ITEMS[k] && ITEMS[k].slot === slot && canEquip(ITEMS[k], m.id));
-    const ii = await menu([{ label: T('（卸下）', '(remove)') }, ...opts.map((k) => ({ label: T(ITEMS[k].name), right: String(slot === 'w' ? ITEMS[k].atk : ITEMS[k].def) }))], { x: 60, y: 60 });
+    const ii = await menu([{ label: T('（卸下）', '(remove)') }, ...opts.map((k) => ({ label: T(ITEMS[k].name), right: short(ITEMS[k]), key: k }))], { x: 60, y: 30, info: (it) => { if (it && it.key) { const [da, dd] = gearDiff(m, it.key); box(150, 150, 98, 30); text(`${T('攻', 'ATK')} ${da >= 0 ? '+' : ''}${da}`, 157, 156, { size: 7 * SC, color: da > 0 ? '#7fff8a' : '#ccc' }); text(`${T('防', 'DEF')} ${dd >= 0 ? '+' : ''}${dd}`, 157, 168, { size: 7 * SC, color: dd > 0 ? '#7fff8a' : '#ccc' }); itemNote(it.key); } } });
     if (ii < 0) continue;
     if (ii === 0) { if (m.eq[slot]) { bagAdd(S.bag, m.eq[slot]); m.eq[slot] = null; } } else equip(m, opts[ii - 1]);
   }
@@ -253,12 +265,12 @@ async function statusMenu() {
   const m = members()[mi], next = (await import('./data.js')).xpFor(m.lv + 1) - m.xp;
   const close = UI.panel(() => {
     box(8, 8, 240, 224); text(nameOf(m.id), 18, 16, { color: '#ffe080' }); text(T(CHARS[m.id].job), 238, 16, { align: 'right', color: '#aaa' });
-    const rowsS = [[T('等級', 'Level'), m.lv], ['HP', `${m.hp} / ${m.maxhp}`], ['MP', `${m.mp} / ${m.maxmp}`], [T('力量', 'Strength'), m.str], [T('速度', 'Agility'), m.agi], [T('體質', 'Resilience'), m.def],
+    const rowsS = [[T('等級', 'Level'), m.lv], ['HP', `${m.hp} / ${m.maxhp}`], ['MP', `${m.mp} / ${m.maxmp}`], [T('力量', 'Strength'), m.str], [T('速度', 'Agility'), agiOf(m)], [T('體質', 'Resilience'), m.def],
       [T('攻擊力', 'Attack'), atk(m)], [T('防禦力', 'Defence'), defense(m)], [T('經驗值', 'Experience'), m.xp], [T('距下一級', 'To next level'), Math.max(0, next)]];
     rowsS.forEach(([k, v], i) => { text(k, 18, 34 + i * 13); text(String(v), 140, 34 + i * 13, { align: 'right' }); });
-    ['w', 'a', 's', 'h'].forEach((k, i) => text(m.eq[k] ? T(ITEMS[m.eq[k]].name) : '—', 150, 34 + i * 13, { color: '#ccc', size: 7 * SC }));
-    text(T('法術', 'Spells'), 150, 92, { color: '#ffe080', size: 7 * SC });
-    m.spells.forEach((s, i) => text(T(SPELLS[s].name), 150 + (i % 2) * 48, 104 + Math.floor(i / 2) * 12, { size: 7 * SC }));
+    SLOTS.forEach(([k], i) => text(m.eq[k] ? T(ITEMS[m.eq[k]].name) : '—', 150, 34 + i * 11, { color: '#ccc', size: 7 * SC }));
+    text(T('法術', 'Spells'), 150, 126, { color: '#ffe080', size: 7 * SC });
+    m.spells.forEach((s, i) => text(T(SPELLS[s].name), 150 + (i % 2) * 48, 138 + Math.floor(i / 2) * 11, { size: 7 * SC }));
     if (m.poison) text(T('中毒', 'Poisoned'), 18, 170, { color: '#8aff8a' });
   });
   await UI.waitKey(); close();

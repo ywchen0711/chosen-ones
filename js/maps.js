@@ -151,12 +151,17 @@ const PALACE = [
 // ---------------------------------------------------------------- shops by chapter
 const ITEMS1 = ['herb', 'antidote', 'wing', 'holywater'];
 const EQUIP = {
-  thistle: (A) => (A.ch() < 5 ? ['stick', 'dagger', 'copper', 'clothes', 'leather', 'potlid', 'lshield', 'hat'] : ['copper', 'spear', 'chain', 'lshield', 'hat', 'helm']),
-  spring: () => ['stick', 'claw', 'copper', 'leather', 'silk', 'lshield', 'hat'],
-  arena: (A) => (A.ch() < 5 ? ['spear', 'claw', 'magicstaff', 'chain', 'silk', 'ishield', 'tiara'] : ['steel', 'battleaxe', 'ironclaw', 'sagestaff', 'steelmail', 'magicrobe', 'mshield', 'helm']),
-  lake: (A) => (A.ch() < 5 ? ['copper', 'spear', 'chain', 'iron', 'ishield', 'helm'] : ['zombie', 'demonclaw', 'platinum', 'platmail', 'mshield', 'tiara', 'sagestaff']),
-  oasis: (A) => (A.ch() < 5 ? ['whip', 'chainwhip', 'magicstaff', 'silk', 'magicrobe', 'ishield', 'tiara'] : ['chainwhip', 'sagestaff', 'dancer', 'magicrobe', 'mshield', 'tiara']),
-  cross: () => ['copper', 'spear', 'steel', 'ironclaw', 'whip', 'magicstaff', 'chain', 'iron', 'silk', 'ishield', 'helm'],
+  thistle: (A) => (A.ch() < 5 ? ['stick', 'dagger', 'boomerang', 'copper', 'clothes', 'travel', 'leather', 'potlid', 'lshield', 'hat', 'bandana', 'gloves', 'sandals', 'charm']
+    : ['copper', 'spear', 'flail', 'chain', 'scale', 'lshield', 'bronzeshield', 'hat', 'helm', 'ironfist', 'boots', 'charm']),
+  spring: () => ['stick', 'claw', 'copper', 'holyknife', 'rapier', 'leather', 'travel', 'silk', 'lshield', 'hat', 'bandana', 'gloves', 'sandals', 'boots'],
+  arena: (A) => (A.ch() < 5 ? ['spear', 'claw', 'flail', 'magicstaff', 'chain', 'scale', 'silk', 'ishield', 'bronzeshield', 'tiara', 'hood', 'ironfist', 'boots', 'charm', 'agiring']
+    : ['steel', 'bastard', 'flamesword', 'battleaxe', 'ironclaw', 'dragonclaw', 'sagestaff', 'steelmail', 'magicrobe', 'mshield', 'helm', 'steelhelm', 'powergloves', 'silverboots', 'guardneck', 'strring']),
+  lake: (A) => (A.ch() < 5 ? ['copper', 'spear', 'flail', 'chain', 'iron', 'ishield', 'scaleshield', 'helm', 'ironboots', 'antidotal', 'strring']
+    : ['zombie', 'demonclaw', 'platinum', 'platmail', 'mirrorarmor', 'mshield', 'tiara', 'sagestaff', 'steelfist', 'wingboots', 'critring', 'lifering']),
+  oasis: (A) => (A.ch() < 5 ? ['whip', 'rapier', 'chainwhip', 'magicstaff', 'silk', 'cloak', 'magicrobe', 'ishield', 'tiara', 'hairband', 'silkgloves', 'wakering', 'agiring']
+    : ['chainwhip', 'starwhip', 'sagestaff', 'wizardwand', 'thunderstaff', 'dancer', 'magicrobe', 'angelrobe', 'mshield', 'tiara', 'hairband', 'prayerring', 'goldneck']),
+  cross: () => ['copper', 'spear', 'steel', 'bastard', 'ironclaw', 'whip', 'magicstaff', 'thunderstaff', 'chain', 'iron', 'silk', 'ishield', 'helm', 'steelhelm', 'ironfist', 'silverboots',
+    'strring', 'agiring', 'antidotal', 'goldneck', 'luckbell'],
 };
 const ITEMS5 = ['herb', 'antidote', 'wing', 'holywater'];
 

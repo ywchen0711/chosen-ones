@@ -103,7 +103,74 @@ export const ITEMS = {
   helm:      A('鐵盔', 'Iron Helmet', 9, 900, FIGHT, 'h'),
   tiara:     A('金冠', 'Golden Tiara', 10, 1200, 'rhea mira thea cass barlow', 'h'),
   skyhelm:   A('天空之盔', 'Helm of Heaven', 22, 0, 'hero', 'h'),
+  // more weapons (bonus: added to strength / agility; fx: a special power, see FX)
+  boomerang: W('回力鏢', 'Boomerang', 10, 150, ALL),
+  holyknife: W('聖銀短刀', 'Silver Knife', 18, 420, ALL),
+  rapier:    W('細劍', 'Rapier', 22, 560, 'hero rhea mira tolle', { bonus: { agi: 4 } }),
+  flail:     W('鏈錘', 'Flail', 26, 680, 'kaldor tolle orin'),
+  thunderstaff: W('雷電之杖', 'Thunder Staff', 24, 1800, MAGE),
+  bastard:   W('雙手大劍', 'Bastard Sword', 40, 2200, SWORD),
+  dragonclaw:W('龍之爪', 'Dragon Claw', 42, 2600, 'rhea orin'),
+  wizardwand:W('巫師之杖', 'Wizard\'s Wand', 28, 2400, MAGE, { bonus: { agi: 3 } }),
+  starwhip:  W('星光之鞭', 'Starlight Whip', 38, 3000, 'mira thea'),
+  flamesword:W('火焰之劍', 'Flame Sword', 48, 3600, SWORD),
+  demonaxe:  W('魔神之斧', 'Demon Axe', 80, 9000, 'kaldor tolle orin'),
+  miracle:   W('奇蹟之劍', 'Miracle Sword', 72, 9500, SWORD, { fx: 'regen' }),
+  // more armour
+  travel:    A('旅人之衣', 'Traveller\'s Clothes', 6, 40, ALL),
+  scale:     A('鱗甲', 'Scale Armour', 12, 240, FIGHT + ' rhea'),
+  cloak:     A('魔法斗篷', 'Magic Cloak', 18, 900, MAGE + ' rhea'),
+  mirrorarmor: A('魔鏡之鎧', 'Mirror Armour', 42, 4500, FIGHT),
+  angelrobe: A('天使之袍', 'Angel Robe', 40, 5000, MAGE + ' rhea', 'a', { fx: 'regen' }),
+  dragonmail:A('龍鱗之鎧', 'Dragon Mail', 58, 9000, FIGHT),
+  // more shields and helmets
+  bronzeshield: A('青銅盾', 'Bronze Shield', 7, 250, ALL, 's'),
+  scaleshield:  A('鱗盾', 'Scale Shield', 9, 400, ALL, 's'),
+  dragonshield: A('龍之盾', 'Dragon Shield', 26, 3500, FIGHT + ' rhea', 's'),
+  goddess:   A('女神之盾', 'Goddess Shield', 34, 9000, ALL, 's', { fx: 'mpregen' }),
+  bandana:   A('頭巾', 'Bandana', 3, 40, ALL, 'h'),
+  hood:      A('魔法帽', 'Wizard\'s Hat', 6, 300, MAGE, 'h'),
+  hairband:  A('疾風髮帶', 'Gale Hairband', 8, 1600, 'rhea mira thea', 'h', { bonus: { agi: 8 } }),
+  steelhelm: A('鋼盔', 'Steel Helmet', 14, 2000, FIGHT, 'h'),
+  greathelm: A('大魔頭盔', 'Great Helm', 22, 8000, FIGHT, 'h'),
+  // gauntlets: a little defence and a little attack
+  gloves:    A('皮手套', 'Leather Gloves', 2, 30, ALL, 'g', { atk: 1 }),
+  silkgloves:A('絲手套', 'Silk Gloves', 4, 400, MAGE, 'g', { bonus: { agi: 3 } }),
+  ironfist:  A('鐵護手', 'Iron Gauntlets', 5, 500, FIGHT + ' rhea', 'g', { atk: 3 }),
+  powergloves: A('力量手套', 'Power Gloves', 6, 2400, FIGHT + ' rhea', 'g', { atk: 8 }),
+  steelfist: A('鋼護手', 'Steel Gauntlets', 10, 2800, FIGHT, 'g', { atk: 5 }),
+  kaiser:    A('帝王護手', 'Kaiser Gauntlets', 14, 8000, FIGHT + ' rhea', 'g', { atk: 12 }),
+  // boots: a little defence and some speed
+  sandals:   A('草鞋', 'Straw Sandals', 1, 20, ALL, 'b', { bonus: { agi: 1 } }),
+  boots:     A('皮靴', 'Leather Boots', 3, 120, ALL, 'b', { bonus: { agi: 2 } }),
+  ironboots: A('鐵靴', 'Iron Boots', 8, 800, FIGHT, 'b'),
+  silverboots: A('銀靴', 'Silver Boots', 10, 2600, ALL, 'b', { bonus: { agi: 4 } }),
+  wingboots: A('疾風之靴', 'Wind Boots', 5, 3000, ALL, 'b', { bonus: { agi: 12 } }),
+  pegasus:   A('天馬之靴', 'Pegasus Boots', 12, 9000, ALL, 'b', { bonus: { agi: 20 } }),
+  // rings
+  strring:   A('力量戒指', 'Ring of Strength', 0, 900, ALL, 'r', { bonus: { str: 5 } }),
+  agiring:   A('敏捷戒指', 'Ring of Speed', 0, 900, ALL, 'r', { bonus: { agi: 8 } }),
+  wakering:  A('清醒之戒', 'Ring of Waking', 0, 1200, ALL, 'r', { fx: 'nosleep' }),
+  lifering:  A('生命戒指', 'Ring of Life', 0, 2500, ALL, 'r', { fx: 'regen' }),
+  prayerring:A('祈禱戒指', 'Prayer Ring', 0, 2500, ALL, 'r', { fx: 'mpregen' }),
+  critring:  A('會心戒指', 'Ring of Fury', 0, 3500, ALL, 'r', { fx: 'crit' }),
+  sagering:  A('賢者之戒', 'Sage\'s Ring', 0, 8000, ALL, 'r', { fx: 'xp' }),
+  // necklaces
+  charm:     A('護身符', 'Lucky Charm', 3, 200, ALL, 'n'),
+  antidotal: A('解毒項鍊', 'Antidote Pendant', 1, 600, ALL, 'n', { fx: 'nopoison' }),
+  goldneck:  A('黃金項鍊', 'Gold Necklace', 2, 1500, ALL, 'n', { fx: 'gold' }),
+  luckbell:  A('幸運鈴鐺', 'Lucky Bell', 2, 2000, ALL, 'n', { fx: 'luck' }),
+  guardneck: A('守護項鍊', 'Guardian Pendant', 10, 3000, ALL, 'n'),
+  starpendant: A('星之墜飾', 'Star Pendant', 6, 8000, ALL, 'n', { bonus: { str: 6, agi: 6 } }),
 };
+// the eight equipment slots, and what the special powers do
+export const SLOTS = [['w', '武器', 'Weapon'], ['a', '鎧甲', 'Armour'], ['s', '盾牌', 'Shield'], ['h', '頭盔', 'Helmet'], ['g', '護手', 'Gauntlets'], ['b', '靴子', 'Boots'], ['r', '戒指', 'Ring'], ['n', '項鍊', 'Necklace']];
+export const FX = {
+  regen: ['每回合回復 HP', 'Regains HP each round'], mpregen: ['每回合回復 MP', 'Regains MP each round'], crit: ['容易打出會心一擊', 'More excellent hits'],
+  nopoison: ['不會中毒', 'Immune to poison'], nosleep: ['不會睡著', 'Immune to sleep'], gold: ['戰鬥金幣 +25%', 'Battle gold +25%'],
+  xp: ['經驗值 +15%', 'Experience +15%'], luck: ['寶物掉落率加倍', 'Monsters drop items twice as often'],
+};
+export const GOLD_RATE = 1.5;          // battle gold (50% more than the monster table says)
 export const canEquip = (it, cid) => it.who === '*' || it.who.split(' ').includes(cid);
 
 // ---------------------------------------------------------------- monsters
@@ -157,6 +224,25 @@ export const MONSTERS = {
   solzar:   M('暗帝索爾札', 'Solzar, Dark Emperor', 'lord', ['#2a1a4a', '#ffd040'], 2600, 115, 78, 50, 0, 0, [['attack', 2], ['inferno', 1], ['icestorm', 1], ['bang', 1], ['heal', 1]], { boss: true, size: 1.6, next: 'solzar2' }),
   solzar2:  M('魔獸索爾札', 'Solzar Unbound', 'demon', ['#4a1a2a', '#ff6a2a'], 3600, 130, 86, 44, 0, 0, [['attack', 2], ['double', 2], ['breath', 1], ['kaboom', 1], ['roar', 1]], { boss: true, size: 1.9 }),
 };
+// what monsters leave behind: [item, 1 in N]; bosses always drop theirs (N = 1)
+const DROPS = {
+  slime: [['herb', 8]], drakee: [['herb', 10], ['gloves', 24]], rabbit: [['sandals', 14], ['herb', 10]], shroom: [['antidote', 6], ['bandana', 24]],
+  lantern: [['holywater', 10], ['charm', 28]], skeleton: [['dagger', 16], ['leather', 20]], bubble: [['antidote', 6], ['boots', 30]], imp: [['wing', 12], ['ruby', 50]],
+  shade: [['strring', 1]],
+  wolf: [['herb', 8], ['boots', 20]], chimera: [['wing', 8], ['bandana', 20]], mage: [['hood', 20], ['elfwater', 40]], mandrake: [['herb', 6], ['silkgloves', 30]],
+  knight: [['bronzeshield', 18], ['ironfist', 30]], viper: [['antidote', 6], ['scale', 30]], gladiator: [['flail', 16], ['ironboots', 30]],
+  vulture: [['wing', 6], ['hairband', 40]], ironclaw: [['agiring', 1], ['ruby', 2]],
+  scorpion: [['antidote', 6], ['scaleshield', 24]], bigshroom: [['herb', 5], ['wakering', 50]], statue: [['ruby', 20], ['ironboots', 24]],
+  bat2: [['elfwater', 30], ['cloak', 30]], minegolem: [['goldneck', 1], ['sapphire', 2]],
+  sandworm: [['antidote', 5], ['silverboots', 40]], boneknight: [['steelhelm', 24], ['bastard', 40]], darkpriest: [['holywater', 8], ['prayerring', 50]],
+  bigscorp: [['scaleshield', 16], ['steelfist', 40]], barga: [['lifering', 1], ['luckbell', 2]],
+  ogre: [['herb', 5], ['powergloves', 30]], drake: [['dragonshield', 30], ['dragonclaw', 40]], ghostknight: [['mirrorarmor', 40], ['flamesword', 50]],
+  archimp: [['elfwater', 20], ['critring', 60]], irongolem: [['steelfist', 20], ['guardneck', 40]], darkmage: [['wizardwand', 30], ['angelrobe', 50]],
+  metal: [['sagering', 4], ['pegasus', 8], ['luckbell', 6]], demonknight: [['demonaxe', 30], ['kaiser', 30], ['greathelm', 30]],
+  blackdragon: [['dragonmail', 20], ['starpendant', 40], ['leaf', 10]], guardian: [['goddess', 1], ['miracle', 1]],
+};
+for (const [k, list] of Object.entries(DROPS)) MONSTERS[k].drops = list;
+
 // monster groups for each area: [[monster, min, max], ...]
 export const ZONES = {
   n1:   [[['slime', 1, 3]], [['drakee', 1, 2]], [['slime', 1, 2], ['drakee', 1, 1]], [['rabbit', 1, 2]], [['shroom', 1, 1], ['slime', 1, 2]]],
