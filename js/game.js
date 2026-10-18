@@ -12,6 +12,22 @@ const { say, says, ask, menu, box, text, S: SC, VW, VH } = UI;
 const canvas = document.getElementById('game'), g = canvas.getContext('2d');
 canvas.width = VW * SC; canvas.height = VH * SC; g.imageSmoothingEnabled = false;
 UI.setCtx(g);
+// HD-2D: a WebGL diorama under the 2D canvas (the 2D canvas keeps every window and word); off, or no WebGL, means the classic flat look
+const glCanvas = document.getElementById('gl'), screenEl = document.getElementById('screen');
+let HDR = null, hdScale = 1, slowT = 0, hdPref = (() => { try { return localStorage.getItem('co.hd') !== '0'; } catch (e) { return true; } })();
+const hdOn = () => !!HDR && hdPref;
+// if the 3D view ever fails, drop back to the flat look for the rest of the session
+function hdRender(st) { try { HDR.render(st); } catch (e) { console.error(e); window.__err = String(e.stack || e); HDR = null; fitScreen(); } }
+function fitScreen() {
+  const wr = document.getElementById('wrap').getBoundingClientRect(), s = Math.max(0.5, Math.min(wr.width / VW, wr.height / VH));
+  const w = Math.floor(VW * s), h = Math.floor(VH * s); screenEl.style.width = w + 'px'; screenEl.style.height = h + 'px';
+  if (HDR) { let dpr = Math.min(2, window.devicePixelRatio || 1); if (w * h * dpr * dpr > 2.4e6) dpr = Math.sqrt(2.4e6 / (w * h)); HDR.resize(w, h, Math.max(0.5, dpr * hdScale)); }
+  glCanvas.style.display = hdOn() ? 'block' : 'none';
+}
+addEventListener('resize', fitScreen); fitScreen(); try { new ResizeObserver(fitScreen).observe(document.getElementById('wrap')); } catch (e) { /* ignore */ }
+import('./hd.js?v=3').then((m) => { try { HDR = m.create(glCanvas); } catch (e) { HDR = null; } fitScreen(); if (HDR && mode === 'title' && UI.stack.length <= 1) titleMenu(); }).catch(() => {});
+function setHD(on) { hdPref = on; try { localStorage.setItem('co.hd', on ? '1' : '0'); } catch (e) { /* ignore */ } fitScreen(); }
+const hdLabel = () => T('畫面：', 'Graphics: ') + (hdPref ? 'HD-2D' : T('經典', 'Classic'));
 const MAPS = buildMaps();
 const KEY = 'co.save.v1', GAME = 'chosen-ones';
 
@@ -90,6 +106,7 @@ async function runScript(fn) {
 
 // ---------------------------------------------------------------- what battles need from the game
 const G = {
+  get hd() { return hdOn(); },
   active: () => S.active.map((id) => S.members[id]), wagonAlive: () => S.wagon.map((id) => S.members[id]).filter(alive),
   get bag() { return S.bag; }, ch: () => S.ch, tactic: () => S.tactic || 'normal',
   isAuto: (m) => S.ch === 5 && m.id !== 'hero' && (S.tactic || 'normal') !== 'manual',
@@ -260,7 +277,8 @@ async function partyMenu() {
   }
 }
 async function systemMenu() {
-  const i = await menu([T('音樂：' + (isMuted() ? '關' : '開'), 'Music: ' + (isMuted() ? 'off' : 'on')), EN ? '中文' : 'English', T('回到標題', 'Title screen')], { x: 80, y: 60 });
+  const i = await menu([T('音樂：' + (isMuted() ? '關' : '開'), 'Music: ' + (isMuted() ? 'off' : 'on')), EN ? '中文' : 'English', T('回到標題', 'Title screen'), ...(HDR ? [hdLabel()] : [])], { x: 80, y: 60 });
+  if (i === 3) setHD(!hdPref);
   if (i === 0) toggleMute();
   if (i === 1) { save(); setLang(EN ? 'zh' : 'en'); }
   if (i === 2 && await ask(T('回到標題畫面？（沒記錄的進度會消失）', 'Return to the title? (Unsaved progress is lost)'), [T('是', 'Yes'), T('否', 'No')]) === 0) { titleMenu(); return true; }
@@ -393,8 +411,8 @@ function titleMenu() {
   mode = 'title'; scene = null; UI.stack.length = 0; music('title');
   const has = !!load();
   (async () => {
-    const opts = [...(has ? [T('繼續冒險', 'Continue')] : []), T('新的冒險', 'New Adventure'), EN ? '中文' : 'English', T('音樂：', 'Music: ') + (isMuted() ? T('關', 'off') : T('開', 'on'))];
-    const i = await menu(opts, { x: 88, y: 150, cancel: false });
+    const opts = [...(has ? [T('繼續冒險', 'Continue')] : []), T('新的冒險', 'New Adventure'), EN ? '中文' : 'English', T('音樂：', 'Music: ') + (isMuted() ? T('關', 'off') : T('開', 'on')), ...(HDR ? [hdLabel()] : [])];
+    const i = await menu(opts, { x: 80, y: 146, cancel: false });
     const k = has ? i : i + 1;
     if (k === 0) { S = load(); if (!S.map || !MAPS[S.map]) { mode = 'card'; cardT = 0; cardCh = S.ch; return; } mode = 'field'; enterMap(S.map, S.x, S.y, S.dir || 'down'); return; }
     if (k === 1) {
@@ -405,43 +423,32 @@ function titleMenu() {
       return startChapter(1);
     }
     if (k === 2) return setLang(EN ? 'zh' : 'en');
+    if (k === 4) { setHD(!hdPref); return titleMenu(); }
     toggleMute(); titleMenu();
   })();
 }
 
 // ---------------------------------------------------------------- drawing
 const T16 = 16 * SC;
-function drawField() {
-  const camX = P.moving ? P.moving.fx + (P.x - P.moving.fx) * P.moving.t : P.x, camY = P.moving ? P.moving.fy + (P.y - P.moving.fy) * P.moving.t : P.y;
-  const ox = VW / 2 - 8 - camX * 16, oy = VH / 2 - 8 - camY * 16, frame = Math.floor(ftime * 2) % 2, theme = MAP.theme || 'town';
-  g.fillStyle = MAP.world ? '#2a5ac8' : MAP.dungeon ? '#000' : '#1a1a1a'; g.fillRect(0, 0, VW * SC, VH * SC);
-  const x0 = Math.floor(-ox / 16) - 1, y0 = Math.floor(-oy / 16) - 1;
-  for (let y = y0; y < y0 + 17; y++) for (let x = x0; x < x0 + 18; x++) {
-    let tn = tileAt(x, y);
-    if (tn === null) { if (MAP.world) tn = 'sea'; else if (MAP.dungeon) continue; else tn = MAP.town ? 'tree' : 'grass'; }
-    if (tn === 'miasma' && S.flags.skysword) tn = 'grass';
-    const b = barrierAt(x, y); if (b) tn = b.tile;
-    if (['castle', 'town', 'village', 'cave', 'tower', 'shrine', 'darkcastle'].includes(tn) && !MAP.world) tn = 'floor';
-    g.drawImage(tile(tn, theme, frame), Math.round((ox + x * 16) * SC), Math.round((oy + y * 16) * SC), T16, T16);
-  }
-  // chests
-  for (const c of MAP.chests || []) {
-    if (c.when && !c.when(A)) continue;
-    const open = S.flags['chest_' + c.id], X = (ox + c.x * 16) * SC, Y = (oy + c.y * 16) * SC;
-    g.fillStyle = '#5a3a1a'; g.fillRect(X + 2 * SC, Y + 5 * SC, 12 * SC, 9 * SC);
-    g.fillStyle = open ? '#2a1a0a' : '#c8782a'; g.fillRect(X + 3 * SC, Y + 6 * SC, 10 * SC, open ? 3 * SC : 7 * SC);
-    if (!open) { g.fillStyle = '#ffd040'; g.fillRect(X + 7 * SC, Y + 8 * SC, 2 * SC, 3 * SC); }
-  }
-  // people
-  const sprites = [];
+const PLACE_TILES = ['castle', 'town', 'village', 'cave', 'tower', 'shrine', 'darkcastle'];
+function visTile(x, y) {
+  let tn = tileAt(x, y);
+  if (tn === null) { if (MAP.world) tn = 'sea'; else if (MAP.dungeon) return null; else tn = MAP.town ? 'tree' : 'grass'; }
+  if (tn === 'miasma' && S.flags.skysword) tn = 'grass';
+  const b = barrierAt(x, y); if (b) tn = b.tile;
+  if (PLACE_TILES.includes(tn) && !MAP.world) tn = 'floor';
+  return tn;
+}
+const camPos = () => [P.moving ? P.moving.fx + (P.x - P.moving.fx) * P.moving.t : P.x, P.moving ? P.moving.fy + (P.y - P.moving.fy) * P.moving.t : P.y];
+// chests, people and the party as { x, y (tiles), img, size }
+function fieldSprites(camX, camY) {
+  const out = [];
+  for (const c of MAP.chests || []) { if (c.when && !c.when(A)) continue; out.push({ x: c.x, y: c.y, chest: !!S.flags['chest_' + c.id] }); }
   for (const n of npcsHere()) {
     let st = npcState.get(n); if (!st) { st = { x: n.x, y: n.y, dir: n.dir || 'down', hx: n.x, hy: n.y, t: Math.random() * 3 }; npcState.set(n, st); }
     if (n.move && !running && !UI.busy()) { st.t -= 1 / 60; if (st.t <= 0) { st.t = 1.5 + Math.random() * 3; const ds = Object.keys(DIRS), d = ds[Math.floor(Math.random() * 4)], [dx, dy] = DIRS[d], nx = st.x + dx, ny = st.y + dy; st.dir = d; if (Math.abs(nx - st.hx) <= 2 && Math.abs(ny - st.hy) <= 2 && tileAt(nx, ny) && WALK.has(tileAt(nx, ny)) && !(nx === P.x && ny === P.y) && !npcAt(nx, ny) && !chestAt(nx, ny)) { st.x = nx; st.y = ny; } } }
-    sprites.push({ y: st.y, draw: () => {
-      const X = (ox + st.x * 16) * SC, Y = (oy + st.y * 16) * SC;
-      if (n.look.startsWith('mon:')) { const md = MONSTERS_ART[n.look.slice(4)]; const sz = 22 * (md.size || 1); g.drawImage(monsterArt(md.art, md.col), X + (8 - sz / 2) * SC, Y + (14 - sz) * SC, sz * SC, sz * SC); }
-      else g.drawImage(person(n.look, st.dir, Math.floor(ftime * 2 + n.x) % 2), X, Y - 2 * SC, T16, T16);
-    } });
+    if (n.look.startsWith('mon:')) { const md = MONSTERS_ART[n.look.slice(4)], sz = 22 * (md.size || 1); out.push({ x: st.x, y: st.y, img: monsterArt(md.art, md.col), size: sz / 16, mon: true }); }
+    else out.push({ x: st.x, y: st.y, img: person(n.look, st.dir, Math.floor(ftime * 2 + n.x) % 2) });
   }
   // the party: the leader, followers in a line, the wagon at the back (chapter 5, outdoors)
   const ids = S.active.filter((id) => S.members[id].hp > 0), followers = Math.min(ids.length - 1, 3);
@@ -449,10 +456,42 @@ function drawField() {
   const pos = (k) => { if (k === 0) return [camX, camY, P.dir]; const tr = P.trail[k - 1]; if (!tr) return null; const prev = k === 1 ? [P.x, P.y] : P.trail[k - 2]; const t = P.moving ? P.moving.t : 1; return [tr[0] + (prev[0] - tr[0]) * (P.moving ? t : 0), tr[1] + (prev[1] - tr[1]) * (P.moving ? t : 0), tr[2]]; };
   for (let k = followers + (showWagon ? 1 : 0); k >= 0; k--) {
     const q = pos(k); if (!q) continue;
-    const [x, y, d] = q, X = (ox + x * 16) * SC, Y = (oy + y * 16) * SC;
-    sprites.push({ y: y - 0.01 * k, draw: () => { if (k === followers + 1 && showWagon) g.drawImage(wagonSprite(d, P.frame), X, Y - 2 * SC, T16, T16); else g.drawImage(person(CHARS[ids[k] || ids[0]].look, k === 0 ? P.dir : d, P.moving ? P.frame : 0), X, Y - 2 * SC, T16, T16); } });
+    const [x, y, d] = q, wag = k === followers + 1 && showWagon;
+    out.push({ x, y: y - 0.01 * k, img: wag ? wagonSprite(d, P.frame) : person(CHARS[ids[k] || ids[0]].look, k === 0 ? P.dir : d, P.moving ? P.frame : 0), size: wag ? 1.25 : 1 });
   }
-  sprites.sort((a, b) => a.y - b.y).forEach((s) => s.draw());
+  return out;
+}
+// what the HD renderer needs to know about the map; the key changes whenever the map's look does
+function hdMap() {
+  const kind = MAP.world ? 'world' : MAP.town ? 'town' : ['cave', 'tower', 'dark', 'shrine', 'castle'].includes(MAP.theme) ? MAP.theme : 'town';
+  const key = mapId + '|' + JSON.stringify((S.mapEdits || {})[mapId] || 0) + (MAP.world ? '|' + BARRIERS.map((b) => +!!S.flags[b.flag]).join('') + +!!S.flags.skysword : '');
+  return { key, w: MAP.w, h: MAP.h, theme: MAP.theme || 'town', kind, at: visTile, margin: MAP.world ? 9 : MAP.dungeon ? 1 : 8, dungeon: !!MAP.dungeon, town: !!MAP.town };
+}
+function hdField() {
+  const [camX, camY] = camPos();
+  hdRender({ t: ftime, camX, camY, sprites: fieldSprites(camX, camY), map: hdMap(), battle: !!(scene && scene.battle) });
+}
+function drawField() {
+  const [camX, camY] = camPos();
+  if (hdOn()) hdField();
+  else {
+    const ox = VW / 2 - 8 - camX * 16, oy = VH / 2 - 8 - camY * 16, frame = Math.floor(ftime * 2) % 2, theme = MAP.theme || 'town';
+    g.fillStyle = MAP.world ? '#2a5ac8' : MAP.dungeon ? '#000' : '#1a1a1a'; g.fillRect(0, 0, VW * SC, VH * SC);
+    const x0 = Math.floor(-ox / 16) - 1, y0 = Math.floor(-oy / 16) - 1;
+    for (let y = y0; y < y0 + 17; y++) for (let x = x0; x < x0 + 18; x++) {
+      const tn = visTile(x, y); if (tn === null) continue;
+      g.drawImage(tile(tn, theme, frame), Math.round((ox + x * 16) * SC), Math.round((oy + y * 16) * SC), T16, T16);
+    }
+    for (const sp of fieldSprites(camX, camY).sort((a, b) => (a.chest !== undefined ? -1 : 0) - (b.chest !== undefined ? -1 : 0) || a.y - b.y)) {
+      const X = (ox + sp.x * 16) * SC, Y = (oy + sp.y * 16) * SC;
+      if (sp.chest !== undefined) {
+        g.fillStyle = '#5a3a1a'; g.fillRect(X + 2 * SC, Y + 5 * SC, 12 * SC, 9 * SC);
+        g.fillStyle = sp.chest ? '#2a1a0a' : '#c8782a'; g.fillRect(X + 3 * SC, Y + 6 * SC, 10 * SC, sp.chest ? 3 * SC : 7 * SC);
+        if (!sp.chest) { g.fillStyle = '#ffd040'; g.fillRect(X + 7 * SC, Y + 8 * SC, 2 * SC, 3 * SC); }
+      } else if (sp.mon) { const sz = sp.size * 16; g.drawImage(sp.img, X + (8 - sz / 2) * SC, Y + (14 - sz) * SC, sz * SC, sz * SC); }
+      else g.drawImage(sp.img, X, Y - 2 * SC, T16 * (sp.size || 1), T16 * (sp.size || 1));
+    }
+  }
   // the place name when on the world map, the party's HP when stopped
   if (MAP.world) { const p = PLACES.find((q) => Math.abs(q.x - P.x) + Math.abs(q.y - P.y) <= 1); if (p) { box(8, 8, Math.max(72, UI.measure(T(p.name)) + 24), 24); text(T(p.name), 18, 14); } }
   else if (MAP.name && ftime - enteredAt < 2.2) { box(8, 8, Math.max(80, UI.measure(T(MAP.name)) + 24), 24); text(T(MAP.name) + (MAP.floor ? ` ${MAP.floor}F` : ''), 18, 14); }
@@ -463,13 +502,24 @@ function drawField() {
 }
 let enteredAt = 0, idleT = 0;
 import { MONSTERS as MONSTERS_ART } from './data.js';
+const TITLE_MAP = 'c1_village', TITLE_CREW = ['kaldor', 'rhea', 'barlow', 'cass', 'hero', 'tolle', 'mira', 'thea', 'orin'];
 function drawTitle() {
-  const W = VW * SC, H = VH * SC, gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#0a1440'); gr.addColorStop(1, '#3a1a5a'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
-  for (let i = 0; i < 60; i++) { const x = (i * 97) % VW, y = (i * 53) % 130; g.fillStyle = `rgba(255,255,255,${0.3 + 0.7 * Math.abs(Math.sin(ftime + i))})`; g.fillRect(x * SC, y * SC, SC, SC); }
-  text(T('天命之路', 'Chosen Ones'), 128, 42, { align: 'center', size: 26 * SC, color: '#ffe080' });
+  const W = VW * SC, H = VH * SC, hd = hdOn();
+  if (hd) {
+    const TM = MAPS[TITLE_MAP], at = (x, y) => { const r = TM.tiles[y], t = r && x >= 0 && x < TM.w ? TILE[r[x]] : 'tree'; return PLACE_TILES.includes(t) ? 'floor' : t || 'tree'; };
+    const cx = 10, cy = 7, sprites = TITLE_CREW.map((id, i) => ({ x: cx - 4 + i, y: cy + (i % 2) * 0.15, img: person(CHARS[id].look, 'down', Math.floor(ftime * 2 + i) % 2) }));
+    g.clearRect(0, 0, W, H);
+    hdRender({ t: ftime, camX: cx + Math.sin(ftime * 0.12) * 0.8, camY: cy - 0.6, sprites, title: true, map: { key: 'title', w: TM.w, h: TM.h, theme: 'town', kind: 'town', at, margin: 8, town: true } });
+    let gr = g.createLinearGradient(0, 0, 0, H * 0.45); gr.addColorStop(0, 'rgba(8,12,40,0.85)'); gr.addColorStop(1, 'rgba(8,12,40,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, H * 0.45);
+    gr = g.createLinearGradient(0, H * 0.6, 0, H); gr.addColorStop(0, 'rgba(8,12,40,0)'); gr.addColorStop(1, 'rgba(8,12,40,0.8)'); g.fillStyle = gr; g.fillRect(0, H * 0.6, W, H * 0.4);
+  } else {
+    const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#0a1440'); gr.addColorStop(1, '#3a1a5a'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  }
+  for (let i = 0; i < (hd ? 0 : 60); i++) { const x = (i * 97) % VW, y = (i * 53) % 130; g.fillStyle = `rgba(255,255,255,${0.3 + 0.7 * Math.abs(Math.sin(ftime + i))})`; g.fillRect(x * SC, y * SC, SC, SC); }
+  if (hd) { g.save(); g.shadowColor = 'rgba(255,190,80,0.8)'; g.shadowBlur = 18; } text(T('天命之路', 'Chosen Ones'), 128, 42, { align: 'center', size: 26 * SC, color: '#ffe080' }); if (hd) g.restore();
   text(T('五章物語', 'A Tale in Five Chapters'), 128, 80, { align: 'center', size: 10 * SC, color: '#fff' });
-  ['kaldor', 'rhea', 'barlow', 'cass', 'tolle', 'mira', 'thea', 'orin', 'hero'].forEach((id, i) => g.drawImage(person(CHARS[id].look, 'down', Math.floor(ftime * 2 + i) % 2), (24 + i * 24) * SC, 112 * SC, T16 * 1.2, T16 * 1.2));
-  text('© ' + T('像素遊樂場', 'Pixel Playground'), 128, 226, { align: 'center', size: 6 * SC, color: '#888' });
+  if (!hd) ['kaldor', 'rhea', 'barlow', 'cass', 'tolle', 'mira', 'thea', 'orin', 'hero'].forEach((id, i) => g.drawImage(person(CHARS[id].look, 'down', Math.floor(ftime * 2 + i) % 2), (24 + i * 24) * SC, 112 * SC, T16 * 1.2, T16 * 1.2));
+  text('© ' + T('像素遊樂場', 'Pixel Playground'), 128, 226, { align: 'center', size: 6 * SC, color: hd ? '#bbb' : '#888' });
 }
 function drawCard() {
   const C = CHAPTERS[cardCh]; g.fillStyle = '#000'; g.fillRect(0, 0, VW * SC, VH * SC);
@@ -492,15 +542,18 @@ let last = performance.now(), lastRaf = performance.now();
 const rafLoop = (t) => { lastRaf = performance.now(); frame(t); requestAnimationFrame(rafLoop); };
 setInterval(() => { if (performance.now() - lastRaf > 150) frame(performance.now()); }, 33);
 function frame() {
-  const now = performance.now(), dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); last = now; ftime += dt;
+  const now = performance.now(), dt = Math.max(0, Math.min(0.1, (now - last) / 1000)); last = now; ftime += dt;
+  // a slow device draws the 3D view at a lower resolution
+  if (hdOn() && (mode === 'field' || mode === 'title') && document.visibilityState === 'visible') { slowT = dt > 0.04 ? slowT + dt : Math.max(0, slowT - dt); if (slowT > 2 && hdScale > 0.5) { hdScale *= 0.8; slowT = 0; fitScreen(); } }
   g.imageSmoothingEnabled = false;
+  if (hdOn() && mode === 'field') g.clearRect(0, 0, VW * SC, VH * SC);
   if (mode === 'title') drawTitle();
   else if (mode === 'card') { cardT += dt; drawCard(); }
   else if (mode === 'ending') { endT += dt; drawEnding(); }
   else if (mode === 'field' && MAP) {
     if (P.moving) { P.moving.t += dt / 0.17; if (P.moving.t >= 1) { P.moving = null; if (!running) arrived(); } }
     if (!P.moving && !running && !UI.busy() && !scene) { const d = heldDir(); if (d) { tryMove(d); idleT = 0; } else idleT += dt; }
-    if (!scene) drawField();
+    if (!scene) drawField(); else if (hdOn()) hdField();
     if (scene) scene.draw(g, dt);
   }
   if (fade > 0) { g.fillStyle = `rgba(0,0,0,${Math.min(1, fade)})`; g.fillRect(0, 0, VW * SC, VH * SC); fade -= dt * 1.6; }
@@ -538,4 +591,4 @@ let rep = 0; setInterval(() => { const d = heldDir(); if (d && UI.busy()) { rep+
 titleMenu();
 requestAnimationFrame(rafLoop);
 // for tests
-window.__co = { get dbg() { return { mode, cardT, busy: UI.busy(), stack: UI.stack.length, running }; }, clearUI: () => { UI.stack.length = 0; }, setLv: (lv) => { for (const m of Object.values(S.members)) Object.assign(m, newMember(m.id, lv, m.eq)); }, get S() { return S; }, set S(v) { S = v; }, A, G, enterMap, startChapter, beginChapter, press, get mode() { return mode; }, get map() { return mapId; }, get P() { return P; }, MAPS, battle: (spec) => runScript(() => A.battle(spec, {})), save, get running() { return running; }, get busy() { return UI.busy(); } };
+window.__co = { hd: (on) => setHD(on), get dbg() { return { mode, cardT, busy: UI.busy(), stack: UI.stack.length, running }; }, clearUI: () => { UI.stack.length = 0; }, setLv: (lv) => { for (const m of Object.values(S.members)) Object.assign(m, newMember(m.id, lv, m.eq)); }, get S() { return S; }, set S(v) { S = v; }, A, G, enterMap, startChapter, beginChapter, press, get mode() { return mode; }, get map() { return mapId; }, get P() { return P; }, MAPS, battle: (spec) => runScript(() => A.battle(spec, {})), save, get running() { return running; }, get busy() { return UI.busy(); } };

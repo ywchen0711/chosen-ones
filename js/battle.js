@@ -29,9 +29,13 @@ function drawBattle(G, B, g, dt) {
   B.shake = Math.max(0, B.shake - dt);
   const sx = B.shake > 0 ? (Math.random() - 0.5) * 10 : 0, sy = B.shake > 0 ? (Math.random() - 0.5) * 8 : 0;
   g.save(); g.translate(sx, sy);
-  g.fillStyle = '#000'; g.fillRect(-20, -20, W + 40, H + 40);
-  g.drawImage(backdrop(B.bg, 248 * SC, 112 * SC), 4 * SC, 48 * SC);
-  g.strokeStyle = '#fff'; g.lineWidth = 2; g.strokeRect(4 * SC, 48 * SC, 248 * SC, 112 * SC);
+  if (G.hd) {      // HD-2D: the blurred diorama shows through; the monsters stand on a soft pool of light
+    const gr = g.createRadialGradient(128 * SC, 150 * SC, 10 * SC, 128 * SC, 150 * SC, 130 * SC); gr.addColorStop(0, 'rgba(255,240,210,0.16)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 48 * SC, W, 150 * SC);
+  } else {
+    g.fillStyle = '#000'; g.fillRect(-20, -20, W + 40, H + 40);
+    g.drawImage(backdrop(B.bg, 248 * SC, 112 * SC), 4 * SC, 48 * SC);
+    g.strokeStyle = '#fff'; g.lineWidth = 2; g.strokeRect(4 * SC, 48 * SC, 248 * SC, 112 * SC);
+  }
   // monsters in a row
   const ms = B.mons.filter((m) => !m.gone || m.fade > 0);
   const sizes = ms.map((m) => 54 * (m.d.size || 1)), total = sizes.reduce((s, x) => s + x * 0.92, 0);
@@ -46,6 +50,7 @@ function drawBattle(G, B, g, dt) {
     g.save(); g.globalAlpha = m.gone ? m.fade : 1;
     const bob = m.sleep > 0 ? 0 : Math.sin(B.time * 2.5 + i) * 1.2;
     const img = monsterArt(m.d.art, m.d.col, m.flash > 0);
+    if (G.hd && !m.gone) { g.fillStyle = 'rgba(0,0,0,0.35)'; g.beginPath(); g.ellipse(cx * SC, 151 * SC, sz * 0.38 * SC, sz * 0.09 * SC, 0, 0, 7); g.fill(); }
     g.drawImage(img, (cx - sz / 2) * SC, (150 - sz + bob) * SC, sz * SC, sz * SC);
     if (m.sleep > 0) text('Zzz', cx + sz * 0.3, 150 - sz, { color: '#a8d0ff', size: 7 * SC });
     g.restore();
@@ -253,7 +258,7 @@ export async function battle(G, spec, opts = {}) {
   const mons = []; for (const [id, n] of spec) for (let i = 0; i < n; i++) mons.push(mkMon(id));
   label(mons);
   const B = { mons, bg: opts.bg || 'field', shake: 0, pops: [], time: 0, turn: null, boss: mons.some((m) => m.d.boss) };
-  G.setScene({ draw: (g, dt) => drawBattle(G, B, g, dt) });
+  G.setScene({ battle: true, draw: (g, dt) => drawBattle(G, B, g, dt) });
   G.music(B.boss ? 'boss' : 'battle');
   for (const p of G.active()) { p.buff = false; p.oomph = false; p.defending = false; p.sleep = 0; }
   const names = [...new Set(mons.map((m) => m.name))];
