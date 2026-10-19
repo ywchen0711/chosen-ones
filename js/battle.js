@@ -1,6 +1,6 @@
 // Battles in the classic first-person style: monsters in front, the party's status above, messages below.
 import { T, EN } from './i18n.js';
-import { MONSTERS, SPELLS, ITEMS, CHARS, GOLD_RATE } from './data.js';
+import { MONSTERS, SPELLS, ITEMS, CHARS, GOLD_RATE, canRecruit } from './data.js';
 import { atk, defense, alive, gainXp, bagTake, agiOf, hasFx } from './party.js';
 import { monster as monsterArt, backdrop } from './art.js';
 import { box, text, say, menu, S as SC, VW } from './ui.js';
@@ -343,6 +343,17 @@ export async function battle(G, spec, opts = {}) {
     const luck = G.active().some((p) => hasFx(p, 'luck')) ? 2 : 1;
     for (const m of beaten) for (const [it, n] of m.d.drops || (m.d.drop ? [m.d.drop] : [])) if (Math.random() < Math.min(1, luck / n)) {
       G.give(it); G.sfx('item'); await say(T(`${m.label}留下了${T(ITEMS[it].name)}！`, `${m.label} dropped a ${T(ITEMS[it].name)}!`));
+    }
+    // a beaten monster may get up and want to come along (one chance in eight; metal slimes are shyer)
+    const kin = [...new Set(beaten.map((m) => m.id))].filter((id) => canRecruit(id) && G.canRecruit(id));
+    if (!B.boss && !opts.noRecruit && kin.length) {
+      const id = pick(kin), d = MONSTERS[id];
+      if (Math.random() < (window.__recruitAll ? 1 : d.metal ? 1 / 32 : 1 / 8)) {
+        G.sfx('item');
+        await say(T(`${T(d.name)}慢慢地站了起來，用期待的眼神看著你們……\n牠好像想成為夥伴！`, `The ${T(d.name)} slowly gets up and looks at you hopefully…\nIt seems to want to join you!`));
+        if (await menu([T('讓牠加入', 'Let it join'), T('不了', 'No, thanks')], { x: 80, y: 120, cancel: false }) === 0) await G.recruit(id);
+        else await say(T(`${T(d.name)}有點失落地走掉了。`, `The ${T(d.name)} wanders off, a little sad.`));
+      }
     }
     for (const p of [...fighters, ...G.wagonAlive()]) {
       for (const up of gainXp(p, hasFx(p, 'xp') ? Math.round(share * 1.15) : share)) {

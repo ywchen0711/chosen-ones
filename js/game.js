@@ -1,6 +1,6 @@
 // The engine: title, chapters, walking the world and towns, talking, menus, shops, inns, churches, saving, and the ending.
 import { T, EN, LANG, setLang } from './i18n.js';
-import { CHARS, ITEMS, SPELLS, ZONES, SLOTS, FX } from './data.js';
+import { CHARS, ITEMS, SPELLS, ZONES, SLOTS, FX, MONSTERS, encounter } from './data.js';
 import { newMember, atk, defense, alive, healFull, bagAdd, bagTake, canEquip, statAt, agiOf } from './party.js';
 import { tile, person, wagon as wagonSprite, monster as monsterArt, LOOKS } from './art.js';
 import { buildMaps, TILE, WALK, PLACES, BARRIERS, worldZone, CHAPTERS, ENDING } from './maps.js';
@@ -96,6 +96,7 @@ const A = {
     return r;
   },
   inn, shop, church, saveOffer,
+  ranch: () => ranch(), recruit: (mid) => recruit(mid), monsters: () => (S.monsters || []).length,
   chapterEnd: (n) => chapterEnd(n), ending: () => ending(), c5Attack: () => c5Attack(),
 };
 async function runScript(fn) {
@@ -113,6 +114,8 @@ const G = {
   async chooseTactic() { const k = ['normal', 'careful', 'nomp', 'manual']; const i = await menu(TACTICS(), { x: 80, y: 100, title: T('作戰', 'Tactics'), start: k.indexOf(S.tactic || 'normal') }); if (i >= 0) S.tactic = k[i]; },
   setScene: (s) => { scene = s; }, music, sfx, addGold: (n) => { S.gold += n; }, give: (it) => bagAdd(S.bag, it),
   inDungeon: () => !!(MAP && MAP.dungeon),
+  canRecruit: (mid) => !S.members['mon_' + mid] && (S.monsters || []).length < 60,
+  recruit: (mid) => recruit(mid),
   swapInFromWagon() { const out = S.active.filter((id) => S.members[id].hp <= 0), fresh = S.wagon.filter((id) => S.members[id].hp > 0); S.active = fresh.slice(0, 4); S.wagon = S.wagon.filter((id) => !S.active.includes(id)).concat(out); },
 };
 const TACTICS = () => [T('全力進攻', 'Show no mercy'), T('小心作戰', 'Focus on healing'), T('不用法術', 'Don\'t use magic'), T('聽我指揮', 'Follow orders')];
@@ -199,7 +202,8 @@ function equip(m, k) { const it = ITEMS[k]; if (!bagTake(S.bag, k)) return; cons
 // ---------------------------------------------------------------- the field menu
 async function fieldMenu() {
   const opts = [['items', T('道具', 'Items')], ['spells', T('法術', 'Spells')], ['equip', T('裝備', 'Equip')], ['status', T('狀態', 'Status')]];
-  if (S.ch === 5) { opts.push(['tactics', T('作戰', 'Tactics')]); if (S.active.length + S.wagon.length > 4) opts.push(['party', T('隊伍', 'Party')]); }
+  if (S.ch === 5) opts.push(['tactics', T('作戰', 'Tactics')]);
+  if (S.active.length + S.wagon.length > 4) opts.push(['party', T('隊伍', 'Party')]);
   opts.push(['system', T('系統', 'System')]);
   const close = UI.panel(() => { box(176, 8, 72, 40); text(`${S.gold}`, 240, 14, { align: 'right' }); text('G', 182, 14, { color: '#ffe080' }); text(T(`第${S.ch}章`, `Ch. ${S.ch}`), 182, 30, { color: '#aaa', size: 7 * SC }); });
   try {
@@ -275,16 +279,52 @@ async function statusMenu() {
   });
   await UI.waitKey(); close();
 }
+// ---------------------------------------------------------------- monster companions and the monster ranch
+// up to four travel with the party (fighting, or following behind when the front row is full); the others wait at the ranch, where any chapter can fetch them
+const along = () => (S.monsters || []).filter((id) => S.active.includes(id) || S.wagon.includes(id)).length;
+async function recruit(mid) {
+  const id = 'mon_' + mid; S.monsters = S.monsters || [];
+  const lead = S.active.length ? Math.max(...S.active.map((k) => S.members[k].lv)) : 1;
+  S.members[id] = newMember(id, Math.max(1, lead - 1)); S.monsters.push(id);
+  sfx('levelup');
+  if (along() < 4) { if (S.active.length < 4) S.active.push(id); else S.wagon.push(id); }
+  const where = S.active.includes(id) ? '' : S.wagon.includes(id) ? T('（在隊伍後面跟著）', ' (following behind)') : T('（送到了魔物牧場）', ' (sent to the Monster Ranch)');
+  await say(T(`${nameOf(id)}成為了夥伴！`, `${nameOf(id)} joins the party!`) + where);
+}
+async function ranch() {
+  S.monsters = S.monsters || [];
+  {
+    const home = S.monsters.filter((id) => !S.active.includes(id) && !S.wagon.includes(id)), mine = S.monsters.filter((id) => S.active.includes(id) || S.wagon.includes(id));
+    const k = await ask(T(`牧場主人：「這裡是魔物牧場。牧場裡有 ${home.length} 隻魔物，和你一起旅行的有 ${mine.length} 隻。」`, `Rancher: "Welcome to the Monster Ranch. ${home.length} monsters live here, and ${mine.length} travel with you."`),
+      [T('帶魔物走', 'Take one along'), T('寄放魔物', 'Leave one here'), T('離開', 'Leave')]);
+    if (k === 0) {
+      if (!home.length) { await say(T('牧場主人：「現在牧場裡沒有魔物喔。」', 'Rancher: "There are no monsters here right now."')); return; }
+      if (mine.length >= 4) { await say(T('牧場主人：「隊伍已經滿了，先寄放一隻吧。」', 'Rancher: "Your party is full. Leave one here first."')); return; }
+      const i = await menu(home.map((id) => ({ label: nameOf(id), right: `Lv${S.members[id].lv}` })), { x: 60, y: 8, title: T('帶誰走？', 'Who comes along?') }); if (i < 0) return;
+      const id = home[i], m = S.members[id]; m.hp = m.maxhp; m.mp = m.maxmp; m.poison = false;
+      // a monster from an earlier chapter catches up a little with the new party
+      const lead = Math.max(...S.active.map((x) => S.members[x].lv)); if (m.lv < lead - 3) { const { gainXp } = await import('./party.js'); const { xpFor } = await import('./data.js'); gainXp(m, xpFor(lead - 3) - m.xp); m.hp = m.maxhp; m.mp = m.maxmp; }
+      if (S.active.length < 4) S.active.push(id); else S.wagon.push(id);
+      sfx('levelup'); await say(T(`${nameOf(id)}高興地跑了過來！`, `${nameOf(id)} comes bounding over!`));
+    } else if (k === 1) {
+      if (!mine.length) { await say(T('牧場主人：「你身邊沒有魔物夥伴呢。」', 'Rancher: "You have no monsters with you."')); return; }
+      const i = await menu(mine.map((id) => ({ label: nameOf(id), right: `Lv${S.members[id].lv}` })), { x: 60, y: 8, title: T('寄放誰？', 'Who stays here?') }); if (i < 0) return;
+      const id = mine[i]; S.active = S.active.filter((x) => x !== id); S.wagon = S.wagon.filter((x) => x !== id);
+      while (S.active.length < 4 && S.wagon.length) S.active.push(S.wagon.shift());
+      await say(T(`${nameOf(id)}留在牧場，開心地和其他魔物玩了起來。`, `${nameOf(id)} stays and starts playing with the other monsters.`));
+    }
+  }
+}
 async function partyMenu() {
-  if (MAP.dungeon) return say(T('馬車進不了這裡。', 'The wagon can\'t come in here.'));
+  if (MAP.dungeon && S.ch === 5) return say(T('馬車進不了這裡。', 'The wagon can\'t come in here.'));
   for (;;) {
     const all = [...S.active, ...S.wagon];
-    const i = await menu(all.map((id, k) => ({ label: `${k < S.active.length ? '⚔' : '🛞'} ${nameOf(id)}`, right: `Lv${S.members[id].lv}` })), { x: 40, y: 8, title: T('選兩個人交換位置', 'Pick two to swap') });
+    const i = await menu(all.map((id, k) => ({ label: `${k < S.active.length ? '⚔' : S.ch === 5 ? '🛞' : '·'} ${nameOf(id)}`, right: `Lv${S.members[id].lv}` })), { x: 40, y: 8, title: T('選兩個人交換位置', 'Pick two to swap') });
     if (i < 0) return;
     const j = await menu(all.map((id, k) => ({ label: `${k < S.active.length ? '⚔' : '🛞'} ${nameOf(id)}`, disabled: k === i })), { x: 140, y: 8, title: T('和誰交換？', 'Swap with?') });
     if (j < 0) continue;
     [all[i], all[j]] = [all[j], all[i]];
-    if (all[0] !== 'hero' && !all.slice(0, 4).includes('hero')) { await say(T('勇者必須在前線。', 'The Hero must stay at the front.')); continue; }
+    if (all.includes('hero') && !all.slice(0, 4).includes('hero')) { await say(T('勇者必須在前線。', 'The Hero must stay at the front.')); continue; }
     S.active = all.slice(0, 4); S.wagon = all.slice(4);
   }
 }
@@ -340,7 +380,7 @@ async function arrived() {
     S.steps -= t === 'forest' || t === 'hills' ? 1.5 : t === 'sand' || t === 'swamp' ? 1.25 : 1;
     if (S.steps <= 0 && (!S.repel || Math.random() < 0.15)) {
       S.steps = 10 + Math.random() * 22;
-      const group = ZONES[zone][Math.floor(Math.random() * ZONES[zone].length)].map(([id, a, b]) => [id, a + Math.floor(Math.random() * (b - a + 1))]);
+      const group = ZONES[zone] ? encounter(zone) : [];
       const bg = MAP.bg || (t === 'sand' ? 'desert' : 'field');
       await runScript(async () => { await A.battle(group, { bg }); });
     }
@@ -386,6 +426,7 @@ async function chapterEnd(n) {
   S.done = S.done || []; if (!S.done.includes(n)) S.done.push(n);
   await say(T(`── 第${n}章　完 ──`, `── End of Chapter ${n} ──`));
   if (n === 1 && S.active.includes('pupu')) await say(T('噗噗：「我要留在城堡裡繼續修行！騎士大人，再見了！」', 'Pupu: "I\'ll stay at the castle and keep training! Goodbye, sir knight!"'));
+  if ((S.monsters || []).some((id) => S.active.includes(id) || S.wagon.includes(id))) await say(T('魔物夥伴們回到了魔物牧場，等待下一次的冒險。', 'The monster companions go back to the Monster Ranch to wait for the next adventure.'));
   for (const m of members()) healFull(m);
   startChapter(n + 1);
   throw ABORT;

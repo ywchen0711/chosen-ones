@@ -1,7 +1,7 @@
 // Balance check: for each area of each chapter, the lowest level at which the chapter's party wins its random fights
 // reliably (97%+) while losing at most about a third of its HP per fight. Run: node tools/balance.mjs
 // The model is plain attacks on both sides with the game's damage formulas, which is close enough for pacing.
-import { MONSTERS, ZONES, xpFor } from '../js/data.js';
+import { MONSTERS, ZONES, xpFor, encounter } from '../js/data.js';
 import { newMember, atk, defense } from '../js/party.js';
 import { CHAPTERS } from '../js/maps.js';
 
@@ -20,7 +20,8 @@ export function fight(party, group) {
   const max = ps.reduce((s, p) => s + p.m.maxhp, 0), left = ps.reduce((s, p) => s + Math.max(0, p.hp), 0);
   return { win: !ms.some((x) => x.hp > 0) && ps.some((p) => p.hp > 0), lost: (max - left) / max, xp: group.reduce((s, id) => s + MONSTERS[id].xp, 0) };
 }
-const groupOf = (zone) => { const opts = ZONES[zone], g = opts[ri(0, opts.length - 1)]; const out = []; for (const [id, a, b] of g) for (let i = ri(a, b); i > 0; i--) out.push(id); return out; };
+// a group as the game rolls it (kin of the area's monsters included)
+const groupOf = (zone) => { const out = []; for (const [id, n] of encounter(zone)) for (let i = n; i > 0; i--) out.push(id); return out; };
 export function zoneStats(members, zone, n = 600) {
   let wins = 0, lost = 0, xp = 0;
   for (let i = 0; i < n; i++) { const r = fight(members, groupOf(zone)); if (r.win) wins++; lost += r.lost; xp += r.xp; }

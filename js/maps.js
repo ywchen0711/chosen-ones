@@ -99,6 +99,15 @@ const shopKeeper = (list, text) => ({ talk: (A) => A.shop(typeof list === 'funct
 const innKeeper = (price) => ({ talk: (A) => A.inn(price) });
 const priest = { talk: (A) => A.church() };
 
+const rancher = (x, y) => ({ x, y, look: 'merchant', dir: 'down', talk: async (A) => {
+  if (!A.flag('ranch_tip')) {
+    A.set('ranch_tip');
+    await A.says([T('牧場主人：「你知道嗎？被打倒的魔物，有時候會站起來，想要跟著你走。」', 'Rancher: "Did you know? A beaten monster will sometimes get up and want to follow you."'),
+      T('牧場主人：「魔物最多四隻可以跟著旅行，其他的就交給我們魔物牧場照顧吧。不管在哪個章節，都可以來這裡接牠們喔。」', 'Rancher: "Up to four can travel with you; leave the rest with us at the Monster Ranch. You can fetch them here in any chapter."')]);
+  }
+  return A.ranch();
+} });
+
 // ---------------------------------------------------------------- dungeons (rooms and corridors from a seed)
 function makeDungeon(seed, theme, opts = {}) {
   const W = opts.w || 26, H = opts.h || 18, R = rng(seed), t = grid(W, H, '#'), rooms = [];
@@ -193,6 +202,26 @@ export function buildMaps() {
       { x: 13, y: 2, look: 'oldman', dir: 'left', talk: (A) => A.say(A.ch() === 1 ? T('大臣：「出了城往南走，就是薊村。洞窟在城的東邊。」', 'Minister: "Leave the castle and head south to reach Thistle. The cave lies east of the castle."') : T('大臣：「世界正被黑暗籠罩……」', 'Minister: "Darkness is falling across the world…"')) },
       { x: 2, y: 7, look: 'soldier', dir: 'right', move: true, talk: (A) => A.say(T('士兵：「藥草要多帶幾個！洞窟裡的骷髏兵可不好對付。」', 'Soldier: "Carry plenty of herbs! The skeletons in that cave are no joke."')) },
       { x: 17, y: 7, look: 'woman', dir: 'left', move: true, talk: (A) => A.say(T('侍女：「卡爾德大人總是這麼認真呢。」', 'Maid: "Sir Kaldor is always so serious."')) },
+      // side story: a young soldier's letter home
+      { x: 16, y: 3, look: 'soldier', dir: 'down', when: (A) => A.ch() === 1, talk: async (A) => {
+        if (!A.flag('c1q_letter')) {
+          await A.says([T('年輕士兵：「卡爾德大人……我有一件事想拜託您。」', 'Young soldier: "Sir Kaldor… may I ask you a favour?"'),
+            T('年輕士兵：「我娘住在薊村，最近病倒了。可是我在守城，走不開……」', 'Young soldier: "My mother lives in Thistle, and she\'s fallen ill. But I\'m on guard duty and can\'t leave…"'),
+            T('年輕士兵：「能幫我把這封信交給她嗎？她不識字，請您唸給她聽就好。」', 'Young soldier: "Could you take her this letter? She can\'t read — would you read it to her?"')]);
+          if (await A.ask(T('要幫他送信嗎？', 'Deliver the letter?'), [T('交給我', 'Leave it to me'), T('現在不行', 'Not now')]) !== 0) return;
+          A.set('c1q_letter'); A.give('letter'); return A.say(T('收下了士兵的信。（他的母親住在薊村的東邊。）', 'You take the Soldier\'s Letter. (His mother lives on the east side of Thistle.)'));
+        }
+        if (A.has('letter')) return A.say(T('年輕士兵：「拜託您了。我娘住在村子東邊的小屋旁。」', 'Young soldier: "Please. My mother lives by the little house on the east side of the village."'));
+        if (A.flag('c1q_letter_done') && !A.flag('c1q_letter_end')) {
+          await A.says([T('年輕士兵：「我娘她……說了什麼？」', 'Young soldier: "Did my mother… say anything?"'), T('卡爾德把母親的話一字一句地轉達了。', 'Kaldor passes on her words, one by one.'),
+            T('年輕士兵：「……『你是娘的驕傲』……」士兵用袖子擦了擦眼睛。', 'Young soldier: "…\'You are my pride\'…" He rubs his eyes with his sleeve.'),
+            T('年輕士兵：「謝謝您，卡爾德大人。等這次的事件平息，我一定回家看她。」', 'Young soldier: "Thank you, Sir Kaldor. When this is over, I\'ll go home to see her."'),
+            T('年輕士兵：「這是我娘給我的護身符……現在，我想讓守護大家的您帶著它。」', 'Young soldier: "This charm was from my mother… I\'d like you to carry it now, since you protect us all."')]);
+          A.set('c1q_letter_end'); A.give('charm'); A.give('herb', 2); A.sfx('chest');
+          return A.say(T('得到了護身符和兩個藥草！', 'Received a Lucky Charm and two Medicinal Herbs!'));
+        }
+        return A.say(T('年輕士兵：「下個月我就能休假回家了！我要幫娘修屋頂。」', 'Young soldier: "Next month I get leave to go home! I\'ll fix Mother\'s roof."'));
+      } },
     ] };
   M.c1_village = makeTown({ buildings: { tl: 'inn', tr: 'item', bl: 'church', br: 'equip' }, deco: [[8, 1, 'F'], [18, 10, 'g'], [18, 11, 'g'], [1, 9, 'w'], [1, 10, 'w']],
     keepers: { tl: innKeeper(4), tr: shopKeeper(ITEMS1), bl: priest, br: shopKeeper(EQUIP.thistle) },
@@ -201,6 +230,38 @@ export function buildMaps() {
       { x: 11, y: 10, look: 'oldman', dir: 'down', talk: (A) => A.say(A.ch() === 1 ? T('老人：「洞窟深處好像住著會說話的史萊姆，不知是好是壞。」', 'Old man: "They say a talking slime lives deep in the cave. Who knows if it\'s friend or foe."') : T('老人：「勇者？……那是很久以前的預言了。」', 'Old man: "A Hero? …That is an old prophecy."')) },
       { x: 5, y: 7, look: 'child', dir: 'down', move: true, talk: (A) => A.say(A.flag('c1_saved') ? T('小孩：「洞窟裡好可怕！可是騎士大人好帥！」', 'Kid: "The cave was so scary! But the knight was so cool!"') : T('小孩：「大家都不敢出門玩了……」', 'Kid: "Nobody dares to go out and play anymore…"')) },
       { x: 14, y: 7, look: 'man', dir: 'down', move: true, talk: (A) => A.say(T('村民：「城堡在北邊，國王陛下很關心我們。」', 'Villager: "The castle is to the north. His Majesty cares about us."')) },
+      // side story: the soldier's mother
+      { x: 18, y: 4, look: 'woman', dir: 'left', talk: async (A) => {
+        if (A.has('letter')) {
+          await A.says([T('老婦人：「咳、咳……騎士大人？這是……我兒子的信？」', 'Old woman: "Cough, cough… sir knight? This is… a letter from my boy?"'),
+            T('卡爾德唸出了信：「娘，我很好。城裡的飯很好吃，大家對我都很好。」', 'Kaldor reads it aloud: "Mother, I am well. The food at the castle is good and everyone is kind to me."'),
+            T('「我現在守護著國王，也守護著村子裡的孩子們。」', '"I guard the king now, and the children of the village too."'),
+            T('「等我放假，就回家幫您修屋頂。請您一定要好好吃藥。」', '"When I get leave I\'ll come home and fix the roof. Please, please take your medicine."'),
+            T('老婦人：「那孩子……從小就怕黑，現在竟然在守護別人了……」', 'Old woman: "That boy… he was afraid of the dark when he was little, and now he guards others…"'),
+            T('老婦人：「騎士大人，請轉告他：你是娘的驕傲。娘會好起來，等你回家。」', 'Old woman: "Sir knight, tell him this: you are my pride. I will get better, and wait for you to come home."')]);
+          A.take('letter'); A.set('c1q_letter_done'); return A.say(T('（回城堡告訴年輕士兵吧。）', '(Go back and tell the young soldier.)'));
+        }
+        if (A.flag('c1q_letter_end') && A.ch() === 5) return A.say(T('老婦人：「我兒子已經當上隊長了喔，呵呵。屋頂也修好了。」', 'Old woman: "My boy is a captain now, you know. Ho ho. And the roof is fixed."'));
+        if (A.flag('c1q_letter_done')) return A.say(T('老婦人：「收到兒子的信，我覺得病都好了一半呢。」', 'Old woman: "Since I got my boy\'s letter, I feel half better already."'));
+        return A.say(T('老婦人：「咳、咳……我的兒子在城裡當兵，不知道過得好不好……」', 'Old woman: "Cough, cough… my son is a soldier at the castle. I wonder if he\'s all right…"'));
+      } },
+      // side story: Tim's dog
+      { x: 16, y: 7, look: 'child', dir: 'down', when: (A) => A.ch() === 1 && A.flag('c1_saved'), talk: async (A) => {
+        if (!A.flag('c1q_dog_found')) {
+          A.set('c1q_dog_ask');
+          return A.says([T('提姆：「騎士大人……我的狗小黑不見了。」', 'Tim: "Sir knight… my dog Kuro is missing."'), T('提姆：「魔物把我抓走的時候，小黑一直追著我叫……後來就沒看到牠了。」', 'Tim: "When the monster took me, Kuro chased after us barking… and then he was gone."'),
+            T('提姆：「牠一定還在洞窟裡等我……」', 'Tim: "I bet he\'s still in the cave, waiting for me…"')]);
+        }
+        if (!A.flag('c1q_dog_end')) {
+          await A.says([T('小黑：「汪！汪汪！」', 'Kuro: "Woof! Woof woof!"'), T('提姆：「小黑！！」提姆緊緊抱住了小黑。', 'Tim: "Kuro!!" Tim throws his arms round the big grey dog.'),
+            T('提姆：「原來你一直守在洞窟裡……對不起，對不起……謝謝你。」', 'Tim: "You were guarding the cave all this time… I\'m sorry, I\'m so sorry… thank you."'),
+            T('提姆的母親：「騎士大人，這是我丈夫以前穿的靴子。他是村裡跑得最快的人……請收下吧。」', 'Tim\'s mother: "Sir knight, these boots were my late husband\'s. He was the fastest runner in the village… please take them."')]);
+          A.set('c1q_dog_end'); A.give('boots'); A.sfx('chest'); return A.say(T('得到了皮靴！', 'Received Leather Boots!'));
+        }
+        return A.say(T('提姆：「我和小黑以後要一起當騎士！」', 'Tim: "When we grow up, Kuro and I are going to be knights!"'));
+      } },
+      { x: 17, y: 7, look: 'mon:wolf', dir: 'down', when: (A) => A.flag('c1q_dog_found'), talk: (A) => A.say(T('小黑：「汪！」（尾巴搖個不停。）', 'Kuro: "Woof!" (His tail won\'t stop wagging.)')) },
+      rancher(1, 4),
       // chapter 5: Kaldor waits at the inn
       { x: 3, y: 4, look: 'kaldor', dir: 'down', when: (A) => A.ch() === 5 && !A.flag('r_kaldor'), talk: async (A) => {
         await A.says([T('卡爾德：「你……莫非就是預言中的勇者？」', 'Kaldor: "You… could you be the Hero of the prophecy?"'), T('卡爾德：「我奉國王之命一直在尋找你。從今天起，我的劍就為你而揮！」', 'Kaldor: "By my king\'s command I have searched for you. From today, my sword is yours!"')]);
@@ -210,7 +271,14 @@ export function buildMaps() {
   Object.assign(M, dungeon('c1_cave', 11, 'cave', 2, { enc: 'cave1', bg: 'cave', name: ['幽暗洞窟', 'Gloom Cave'],
     floors: {
       1: { chests: [{ item: 'herb' }, { gold: 60 }, { item: 'antidote' }],
-        npcs: [{ at: (a) => a.mid[1], look: 'pupu', dir: 'down', when: (A) => A.ch() === 1 && !A.flag('pupu'), talk: async (A) => {
+        npcs: [
+          { at: (a) => a.mid[3], look: 'mon:wolf', dir: 'down', when: (A) => A.ch() === 1 && A.flag('c1q_dog_ask') && !A.flag('c1q_dog_found'), talk: async (A) => {
+            await A.says([T('一隻灰色的大狗守在岔路前。牠的腳受了傷，卻仍然朝著洞窟深處低吼。', 'A big grey dog stands guard at the fork. Its leg is hurt, but it still growls toward the depths of the cave.'),
+              T('大狗聞到卡爾德身上提姆的味道，突然搖起了尾巴。', 'It catches Tim\'s scent on Kaldor, and suddenly its tail starts wagging.'),
+              T('（是提姆的狗小黑！牠一直守在這裡，不讓魔物再靠近孩子們回家的路。）', '(It\'s Tim\'s dog, Kuro! He has stood here all along, keeping the monsters off the children\'s way home.)'),
+              T('卡爾德：「好孩子……你做得很好。我們回家吧。」', 'Kaldor: "Good boy… you did well. Let\'s go home."')]);
+            A.set('c1q_dog_found'); await A.say(T('小黑一跛一跛地跑出了洞窟，往村子奔去。', 'Kuro limps out of the cave and races off toward the village.'));
+          } },{ at: (a) => a.mid[1], look: 'pupu', dir: 'down', when: (A) => A.ch() === 1 && !A.flag('pupu'), talk: async (A) => {
           await A.says([T('史萊姆：「噗噗！別、別打我！我是好史萊姆！」', 'Slime: "Pu-pu! D-don\'t hit me! I\'m a good slime!"'), T('史萊姆：「我叫噗噗。我想變成人類……跟著騎士大人說不定就能實現夢想！」', 'Slime: "My name is Pupu. I want to become human… maybe if I follow a knight, my dream will come true!"')]);
           if (await A.ask(T('要讓噗噗加入嗎？', 'Let Pupu join?'), [T('好', 'Yes'), T('不要', 'No')]) === 0) { A.set('pupu'); await A.join('pupu'); } else await A.say(T('噗噗：「嗚……我會在這裡等你改變心意的。」', 'Pupu: "Boo… I\'ll wait here till you change your mind."'));
         } }] },
@@ -271,7 +339,47 @@ export function buildMaps() {
       { x: 11, y: 4, look: 'oldman', dir: 'down', talk: (A) => A.say(T('老人：「西北方的西爾峰洞窟最深處，供奉著會唱歌的石頭。」', 'Old man: "In the depths of Windpeak Cave, to the north-west, there is a stone that sings."')) },
       { x: 14, y: 7, look: 'soldier', dir: 'down', move: true, talk: (A) => A.say(A.flag('c2_voice') ? T('士兵：「東邊的橋開放了！競技之都就在河的對岸。」', 'Soldier: "The eastern bridge is open! Arena City is across the river."') : T('士兵：「通往競技之都的橋被國王下令封鎖了。」', 'Soldier: "The king has closed the bridge to Arena City."')) },
       { x: 5, y: 7, look: 'woman', dir: 'down', move: true, talk: (A) => A.say(T('姑娘：「公主殿下真的一腳踢破了牆壁嗎？好厲害！」', 'Girl: "Did the princess really kick through the wall? Amazing!"')) },
+      // side story: Barlow's old friend
+      { x: 18, y: 4, look: 'sage', dir: 'left', talk: async (A) => {
+        if (A.ch() === 2 && A.flag('c2_escape') && !A.flag('c2q_friend')) {
+          await A.says([T('老魔法師：「這腳步聲……還有這股燒焦鬍子的味道……巴洛？是你嗎？」', 'Old wizard: "Those footsteps… and that smell of singed beard… Barlow? Is that you?"'),
+            T('巴洛：「梅爾文！好久不見了，老朋友。」', 'Barlow: "Melvin! It has been so long, old friend."'),
+            T('梅爾文：「五十年前，我們約好要一起爬上西爾峰，看山頂的晚霞。」', 'Melvin: "Fifty years ago we promised to climb Windpeak together and watch the sunset from the top."'),
+            T('梅爾文：「可是我的眼睛在那之後就看不見了……那個約定，也就一直沒能實現。」', 'Melvin: "But my eyes failed soon after… and that promise was never kept."'),
+            T('巴洛：「……梅爾文，我說給你聽。西爾峰的晚霞是金色的，像整片天空都在燃燒。」', 'Barlow: "…Melvin, let me tell you. The sunset over Windpeak is gold, as if the whole sky were on fire."'),
+            T('巴洛：「山腳下的村子亮起燈火，像星星落在了地上。風很冷，可是很溫柔。」', 'Barlow: "The villages below light their lamps, like stars fallen to earth. The wind is cold, but gentle."'),
+            T('梅爾文：「……是嗎。原來是那樣的景色啊。」老人的眼角泛著淚光。', 'Melvin: "…I see. So that is how it looks." Tears shine at the corners of his eyes.'),
+            T('梅爾文：「謝謝你，巴洛。這是我年輕時戴的帽子，它比我更適合繼續旅行。」', 'Melvin: "Thank you, Barlow. Here — the hat I wore when I was young. It ought to keep travelling, more than I."')]);
+          A.set('c2q_friend'); A.give('hood'); A.give('elfwater'); A.sfx('chest');
+          return A.say(T('得到了魔法帽和精靈之水！', 'Received a Wizard\'s Hat and an Elfin Elixir!'));
+        }
+        if (A.flag('c2q_friend')) return A.say(T('梅爾文：「巴洛那傢伙，還是那麼愛說故事。下次再說給我聽吧。」', 'Melvin: "Barlow always did love telling stories. Tell me another one next time."'));
+        return A.say(T('老魔法師：「我的眼睛看不見了……不過聽得出來，妳是個很有精神的孩子。」', 'Old wizard: "My eyes no longer see… but I can hear you\'re a lively one."'));
+      } },
+      // side story: a mother waiting for her son
+      { x: 1, y: 4, look: 'woman', dir: 'right', talk: async (A) => {
+        if (A.ch() !== 2) return A.say(T('婦人：「阿德現在每天都幫我挑水呢。」', 'Woman: "Ade fetches my water every day now."'));
+        if (A.flag('c2q_son_back') && !A.flag('c2q_son_end')) {
+          await A.says([T('阿德：「娘……我回來了。我輸了，輸得一塌糊塗……」', 'Ade: "Mother… I\'m home. I lost. I lost badly…"'), T('婦人：「傻孩子……你能平安回來，娘就什麼都不要了。」', 'Woman: "Silly boy… you\'re home safe. That\'s all I ever wanted."'),
+            T('母子倆抱在一起，哭了很久很久。', 'Mother and son hold each other and cry for a long, long time.'),
+            T('阿德：「公主殿下，謝謝您。這是我在競技場戴過的護手……希望它能幫上您。」', 'Ade: "Princess, thank you. These are the gauntlets I wore in the arena… I hope they help you."')]);
+          A.set('c2q_son_end'); A.give('ironfist'); A.sfx('chest'); return A.say(T('得到了鐵護手！', 'Received Iron Gauntlets!'));
+        }
+        if (A.flag('c2q_son_end')) return A.say(T('婦人：「阿德說，等公主殿下回來，要再跟您比一場呢。」', 'Woman: "Ade says he wants a rematch when you come back, Princess."'));
+        A.set('c2q_son_ask');
+        return A.says([T('婦人：「我的兒子阿德說要成為最強的鬥士，去了競技之都……已經一年沒有消息了。」', 'Woman: "My son Ade went to Arena City to become the strongest fighter… I haven\'t heard from him in a year."'),
+          T('婦人：「不管他是輸是贏，我只想知道他平不平安……」', 'Woman: "Win or lose, I only want to know he\'s safe…"')]);
+      } },
+      { x: 1, y: 5, look: 'man', dir: 'up', when: (A) => A.flag('c2q_son_back'), talk: (A) => A.say(T('阿德：「輸了也沒關係……我現在明白了。謝謝您，公主殿下。」', 'Ade: "It\'s all right to lose… I understand that now. Thank you, Princess."')) },
+      rancher(16, 7),
     ] });
+  M.c2_spring.onEnter = async (A) => {
+    if (A.ch() === 2 && !A.flag('c2_out')) {
+      A.set('c2_out');
+      await A.says([T('莉雅：「哇——！這就是城牆外面的世界！」', 'Rhea: "Wow! So this is the world outside the walls!"'), T('巴洛：「公主殿下，請別跑太遠……老夫的腰……」', 'Barlow: "Princess, please don\'t run so far ahead… my poor back…"'),
+        T('卡斯：「呵呵，先在鎮上打聽一下國王陛下的病吧。」', 'Cass: "Heh. Let\'s ask around town about His Majesty\'s illness first."')]);
+    }
+  };
   Object.assign(M, dungeon('c2_cave', 23, 'cave', 2, { enc: 'cave2', bg: 'cave', name: ['西爾峰洞窟', 'Windpeak Cave'],
     floors: { 1: { chests: [{ item: 'magicstaff' }, { item: 'herb' }, { gold: 150 }] },
       2: { chests: [{ item: 'chain' }, { item: 'elfwater' }],
@@ -290,7 +398,7 @@ export function buildMaps() {
       for (let i = 0; i < bouts.length; i++) {
         await A.say(T(`第 ${i + 1} 戰，開始！`, `Bout ${i + 1}, begin!`));
         if (i === 3) await A.say(T('鐵爪將軍：「哼，公主？小丫頭也想當冠軍？讓我把妳撕碎吧！」', 'General Ironclaw: "Hmph, a princess? A little girl wants to be champion? I\'ll tear you apart!"'));
-        const r = await A.battle(bouts[i], { bg: 'castle', noFlee: true });
+        const r = await A.battle(bouts[i], { bg: 'castle', noFlee: true, noRecruit: true });
         if (r !== 'win') return;
       }
       A.set('c2_won');
@@ -299,6 +407,15 @@ export function buildMaps() {
     npcs: [
       { x: 8, y: 4, look: 'man', dir: 'down', move: true, talk: (A) => A.say(T('鬥士：「今年的大會有個叫鐵爪將軍的怪物參賽，強得嚇人。」', 'Fighter: "This year a monster called General Ironclaw has entered. He\'s terrifyingly strong."')) },
       { x: 11, y: 10, look: 'woman', dir: 'down', move: true, talk: (A) => A.say(T('觀眾：「聽說鐵爪將軍其實是某個帝王派來找勇者的……」', 'Spectator: "They say Ironclaw was sent by some emperor to hunt for the Hero…"')) },
+      // side story: the young fighter who could not go home
+      { x: 16, y: 7, look: 'man', dir: 'left', when: (A) => A.ch() === 2 && !A.flag('c2q_son_back'), talk: async (A) => {
+        if (!A.flag('c2q_son_ask')) return A.say(T('年輕鬥士：「我要在這裡變強……變強之前，絕不回家。」', 'Young fighter: "I\'ll get strong here… and I won\'t go home until I do."'));
+        await A.says([T('年輕鬥士：「……妳說我娘在找我？」', 'Young fighter: "…My mother is looking for me?"'), T('阿德：「我在第一戰就輸了。沒臉回去見她……我說過要成為最強的。」', 'Ade: "I lost my very first bout. I can\'t face her… I swore I\'d be the strongest."'),
+          T('莉雅：「我練功的時候也輸過好幾百次！輸了，就再站起來嘛！」', 'Rhea: "I\'ve lost hundreds of times in training! When you lose, you just get back up!"'),
+          T('莉雅：「而且，你娘才不在乎你是不是最強。她只是想看到你。」', 'Rhea: "Besides, your mother doesn\'t care if you\'re the strongest. She just wants to see you."'),
+          T('阿德：「……公主殿下……」', 'Ade: "…Princess…"'), T('阿德：「好，我這就回泉水鎮！」', 'Ade: "Right. I\'m going home to Springvale!"')]);
+        A.set('c2q_son_back');
+      } },
       { x: 5, y: 7, look: 'rhea', dir: 'down', when: (A) => A.ch() === 5 && !A.flag('r_rhea'), talk: async (A) => {
         await A.says([T('莉雅：「你就是勇者？太好了！我們一直在找你！」', 'Rhea: "You\'re the Hero? Great! We\'ve been looking for you!"'), T('巴洛：「王宮的大家被魔族擄走了。要救他們，就得打倒那個暗帝。」', 'Barlow: "Our people were taken by the demons. To save them, we must defeat that Dark Emperor."'), T('卡斯：「勇者大人，請讓我們同行！」', 'Cass: "Hero, please let us come with you!"')]);
         A.set('r_rhea'); await A.join('rhea'); await A.join('barlow'); await A.join('cass');
@@ -328,13 +445,46 @@ export function buildMaps() {
         await A.says([T('托爾買下了店面！', 'Tolle buys the shop!'), T('托爾：「太好了！從今天起，這裡就是托爾商店！」', 'Tolle: "Wonderful! From today, this is Tolle\'s Emporium!"'), T('托爾的店生意興隆，沒過多久，他就成了遠近馳名的大商人。', 'The shop prospers, and before long Tolle is a famous merchant.'), T('他用賺來的錢出資，開通了連接世界各地的山中隧道——', 'With his fortune he pays to dig tunnels through the mountains, linking every corner of the world —'), T('一條為了勇者而開的路。', 'a road opened for the Hero.')]);
         return A.chapterEnd(3);
       } },
-      { x: 11, y: 4, look: 'child', dir: 'down', move: true, talk: (A) => A.say(T('托爾的兒子：「爸爸要開店了嗎？好棒喔！」', 'Tolle\'s son: "Dad\'s opening a shop? Awesome!"')) },
+      { x: 11, y: 4, look: 'child', dir: 'down', move: true, talk: async (A) => {
+        // side story: a birthday present for Nell
+        if (A.ch() !== 3) return A.say(T('托爾的兒子：「爸爸是全世界最棒的商人！」', 'Tolle\'s son: "My dad is the best merchant in the whole world!"'));
+        if (A.has('starstone')) {
+          await A.says([T('托爾的兒子：「哇——！好漂亮！跟星星一樣！」', 'Tolle\'s son: "Wow! It\'s beautiful! Just like a star!"'), T('兒子捧著星之石，跑進了家裡。', 'The boy runs into the house, holding the Star Stone in both hands.'),
+            T('妮爾：「這是……星之石？你們還記得我說過的話……」', 'Nell: "This is… a Star Stone? You remembered what I said…"'),
+            T('妮爾：「小時候在礦坑邊看到的光……我以為這種小事，早就被忘記了。」', 'Nell: "The light I saw by the mine when I was little… I thought such a small thing was long forgotten."'),
+            T('托爾：「我們家的事，怎麼會是小事。」', 'Tolle: "Nothing about our family is a small thing."'),
+            T('妮爾：「……謝謝。這是我收過最棒的生日禮物。」', 'Nell: "…Thank you. It\'s the best birthday present I\'ve ever had."'),
+            T('妮爾：「這是我偷偷存下來的錢。拿去吧，當作開店的資金！」', 'Nell: "Here — money I\'ve been saving in secret. Put it toward the shop!"')]);
+          A.take('starstone'); A.set('c3q_star'); A.addGold(300); A.sfx('chest'); return A.say(T('得到了 300 枚金幣！', 'Received 300 gold!'));
+        }
+        if (A.flag('c3q_star')) return A.say(T('托爾的兒子：「媽媽每天晚上都把星之石放在窗邊喔。」', 'Tolle\'s son: "Every night Mum puts the Star Stone on the windowsill."'));
+        A.set('c3q_star_ask');
+        return A.says([T('托爾的兒子：「爸爸！下禮拜是媽媽的生日喔！」', 'Tolle\'s son: "Dad! It\'s Mum\'s birthday next week!"'),
+          T('托爾的兒子：「媽媽說，她小時候在礦坑附近看過會發光的「星之石」，好想再看一次。」', 'Tolle\'s son: "Mum says when she was little she saw a glowing Star Stone near the mine. She wishes she could see one again."'),
+          T('托爾的兒子：「爸爸去礦坑的時候，可以幫我找找嗎？拜託！」', 'Tolle\'s son: "When you go to the mine, can you look for one? Please!"')]);
+      } },
+      // side story: the miner's widow
+      { x: 18, y: 4, look: 'woman', dir: 'left', talk: async (A) => {
+        if (A.has('locket')) {
+          await A.says([T('寡婦：「這、這個墜子……是我先生的！」', 'Widow: "Th-this locket… it was my husband\'s!"'),
+            T('寡婦：「十年前礦坑崩塌，他再也沒有回來。出門前他還說，晚上要回來吃我煮的燉菜……」', 'Widow: "Ten years ago the mine fell in, and he never came home. That morning he said he\'d be back for my stew…"'),
+            T('寡婦：「墜子裡……是我們的結婚畫像。他一直把它帶在身上……」', 'Widow: "Inside… is our wedding portrait. He always kept it with him…"'),
+            T('托爾：「這是您的東西，請收下吧。」', 'Tolle: "This belongs to you. Please, take it."'),
+            T('寡婦：「謝謝你，托爾。你一定會成為了不起的商人——因為你懂得什麼東西是無價的。」', 'Widow: "Thank you, Tolle. You\'ll be a great merchant — because you know what can\'t be bought."'),
+            T('寡婦：「這條項鍊是他送我的。現在，請你帶著它，去實現你的夢想吧。」', 'Widow: "He gave me this necklace. Now please take it, and go make your dream come true."')]);
+          A.take('locket'); A.set('c3q_locket'); A.give('goldneck'); A.sfx('chest'); return A.say(T('得到了黃金項鍊！', 'Received a Gold Necklace!'));
+        }
+        if (A.flag('c3q_locket')) return A.say(T('寡婦：「每天晚上，我都會對著墜子跟他說說話。」', 'Widow: "Every night I talk to him a little, holding the locket."'));
+        if (A.ch() === 3) A.set('c3q_locket_ask');
+        return A.say(T('寡婦：「我先生是礦工……十年前，在舊礦坑的最深處……」', 'Widow: "My husband was a miner… ten years ago, deep in the Old Mine…"'));
+      } },
+      rancher(1, 4),
       { x: 14, y: 7, look: 'man', dir: 'down', move: true, talk: (A) => A.say(T('鎮民：「商人托爾賣東西的時候總能賣個好價錢呢。」', 'Townsman: "Tolle always gets a good price when he sells things."')) },
       { x: 5, y: 7, look: 'soldier', dir: 'down', talk: (A) => A.say(T('礦工：「礦坑最深處有個會動的巨大石像，大家都不敢再進去了。」', 'Miner: "There\'s a giant moving statue at the bottom of the mine. Nobody dares go in anymore."')) },
     ] });
   Object.assign(M, dungeon('c3_mine', 37, 'cave', 2, { enc: 'mine', bg: 'cave', name: ['舊礦坑', 'Old Mine'],
-    floors: { 1: { chests: [{ item: 'ruby' }, { item: 'herb' }, { gold: 220 }, { item: 'ishield' }] },
-      2: { chests: [{ item: 'sapphire' }, { item: 'elfwater' }, { item: 'ruby' }],
+    floors: { 1: { chests: [{ item: 'ruby' }, { item: 'herb' }, { gold: 220 }, { item: 'ishield' }, { item: 'starstone', when: (A) => A.ch() === 3 && A.flag('c3q_star_ask') }] },
+      2: { chests: [{ item: 'sapphire' }, { item: 'elfwater' }, { item: 'ruby' }, { item: 'locket', when: (A) => A.ch() === 3 && A.flag('c3q_locket_ask') }],
         npcs: [
           { at: (a) => a.end, look: 'mon:minegolem', dir: 'down', when: (A) => !A.flag('c3_boss'), talk: async (A) => {
             await A.say(T('巨大的石像緩緩地動了起來……！', 'The giant statue slowly begins to move…!'));
@@ -358,19 +508,49 @@ export function buildMaps() {
       { x: 8, y: 3, look: 'man', dir: 'down', move: true, talk: (A) => A.say(T('商人：「沙漠裡的沙蟲會從腳下冒出來，要小心。」', 'Trader: "Sand vipers burst up from under your feet in the desert. Be careful."')) },
       { x: 11, y: 11, look: 'woman', dir: 'down', move: true, talk: (A) => A.say(T('婦人：「艾德根大人研究的是能讓生物進化的秘法……巴爾加就是為了那個才下手的。」', 'Woman: "Lord Edgan was studying the secret of evolution… that is why Barga killed him."')) },
       { x: 5, y: 7, look: 'oldman', dir: 'down', talk: (A) => A.say(T('老人：「鍊金之塔在綠洲的東南方。塔頂就是巴爾加的實驗室。」', 'Old man: "The Alchemist\'s Tower lies south-east of the oasis. Barga\'s laboratory is at the top."')) },
+      // side story: the little dancer
+      { x: 18, y: 4, look: 'child', dir: 'left', talk: async (A) => {
+        if (A.has('desertrose')) {
+          await A.says([T('莎拉：「沙漠玫瑰！姐姐們真的幫我找到了！」', 'Sara: "A desert rose! You really found one!"'), T('米菈陪著莎拉，把花放在了她母親的墓前。', 'Mira walks with Sara and lays the flower on her mother\'s grave.'),
+            T('米菈：「莎拉，妳想學跳舞嗎？……來，先踏出這一步。」', 'Mira: "Sara, do you want to learn to dance? …Here, take this first step."'),
+            T('莎拉笑著轉了一圈，裙擺在夕陽下閃閃發光。', 'Sara laughs and twirls, her skirt glittering in the setting sun.'),
+            T('希雅：「姐姐，好久沒看到妳這樣笑了。」', 'Thea: "Sister, I haven\'t seen you smile like that in so long."'),
+            T('米菈：「……是啊。說不定，我們也該為了活著的人跳舞。」', 'Mira: "…You\'re right. Maybe we should dance for the living, too."'),
+            T('莎拉：「這是媽媽的戒指。媽媽說，跳舞的人不能睡著！送給姐姐！」', 'Sara: "This was Mum\'s ring. She said a dancer must never fall asleep! It\'s for you!"')]);
+          A.take('desertrose'); A.set('c4q_rose'); A.give('wakering'); A.sfx('chest'); return A.say(T('得到了清醒之戒！', 'Received a Ring of Waking!'));
+        }
+        if (A.flag('c4q_rose')) return A.say(T('莎拉：「等我長大，要和米菈姐姐一起上台！」', 'Sara: "When I grow up I\'ll dance on stage with Mira!"'));
+        if (A.ch() === 4) A.set('c4q_rose_ask');
+        return A.says([T('小女孩：「我叫莎拉。我也想像米菈姐姐一樣跳舞……」', 'Little girl: "I\'m Sara. I want to dance like Mira…"'),
+          T('莎拉：「媽媽以前也是舞孃。我想在媽媽的墓前放一朵沙漠玫瑰……可是那種花，只開在鍊金之塔裡。」', 'Sara: "Mum was a dancer too. I want to put a desert rose on her grave… but they only grow inside the Alchemist\'s Tower."')]);
+      } },
+      rancher(16, 7),
       { x: 15, y: 4, look: 'mira', dir: 'left', when: (A) => A.ch() === 5 && !A.flag('r_mira'), talk: async (A) => {
         await A.says([T('米菈：「你就是勇者？命運真是奇妙呢。」', 'Mira: "You\'re the Hero? Fate is a strange thing."'), T('希雅：「我的水晶球裡一直映著你的身影。暗帝索爾札——他就是父親之仇的真正元兇。」', 'Thea: "Your face has been in my crystal ball for a long time. Solzar, the Dark Emperor — he is the true cause of our father\'s death."'), T('奧林：「我們三個都跟你走！」', 'Orin: "All three of us are with you!"')]);
         A.set('r_mira'); await A.join('mira'); await A.join('thea'); await A.join('orin');
       } },
     ] });
   Object.assign(M, dungeon('c4_tower', 53, 'tower', 3, { enc: 'tower', bg: 'tower', name: ['鍊金之塔', 'Alchemist\'s Tower'], size: { w: 22, h: 16 },
-    floors: { 1: { chests: [{ item: 'herb' }, { gold: 400 }, { item: 'silk' }] }, 2: { chests: [{ item: 'magicrobe' }, { item: 'elfwater' }, { item: 'ishield' }] },
+    floors: { 1: { chests: [{ item: 'herb' }, { gold: 400 }, { item: 'silk' }, { item: 'desertrose', when: (A) => A.ch() === 4 && A.flag('c4q_rose_ask') }] },
+      2: { chests: [{ item: 'magicrobe' }, { item: 'elfwater' }, { item: 'ishield' }],
+        // side story: their father's last words
+        npcs: [{ at: (a) => a.mid[2], look: 'sage', dir: 'down', when: (A) => A.ch() === 4 && !A.flag('c4q_edgan'), talk: async (A) => {
+          await A.says([T('書架前，浮現出一個朦朧的身影……', 'Before the bookshelves, a faint figure shimmers into view…'), T('希雅：「……父親？」', 'Thea: "…Father?"'),
+            T('艾德根：「米菈、希雅……我的女兒們。妳們長大了呢。」', 'Edgan: "Mira, Thea… my daughters. How you have grown."'),
+            T('艾德根：「我知道妳們是為了我而來的。但是，答應我一件事——」', 'Edgan: "I know you came here for my sake. But promise me one thing —"'),
+            T('艾德根：「不要讓仇恨吞沒了妳們。米菈的舞，希雅的笑容，是我這一生最驕傲的寶物。」', 'Edgan: "Do not let hatred swallow you. Mira\'s dancing and Thea\'s smile were the proudest treasures of my life."'),
+            T('米菈：「父親……我們好想您……」', 'Mira: "Father… we miss you so much…"'),
+            T('艾德根：「我一直都在妳們身邊。……去吧。活下去，然後要幸福地活下去。」', 'Edgan: "I am always beside you. …Go now. Live — and live happily."'),
+            T('身影化作點點光芒消失了。原地留下了一枚戒指。', 'The figure scatters into motes of light. A ring is left where he stood.')]);
+          A.set('c4q_edgan'); A.give('prayerring'); A.sfx('chest'); await A.say(T('得到了祈禱戒指！', 'Received a Prayer Ring!'));
+        } }] },
       3: { chests: [{ item: 'leaf' }, { item: 'skyshield', when: (A) => A.ch() === 5 }],
         npcs: [{ at: (a) => a.end, look: 'mon:barga', dir: 'down', when: (A) => !A.flag('c4_boss'), talk: async (A) => {
           await A.says([T('巴爾加：「喲，這不是老師的女兒們嗎？來為那老頭子報仇？」', 'Barga: "Well, if it isn\'t the master\'s daughters. Come to avenge the old man?"'), T('巴爾加：「進化之秘法早已獻給了偉大的暗帝索爾札大人！妳們就去陪老頭子吧！」', 'Barga: "The secret of evolution now belongs to the great Dark Emperor Solzar! Go and join your father!"')]);
           if (await A.battle([['barga', 1]], { bg: 'tower' }) !== 'win') return;
           A.set('c4_boss'); A.music('sad');
           await A.says([T('巴爾加：「可……可惡……索爾札大人……會替我……」', 'Barga: "Cu… curse you… Lord Solzar… will avenge…"'), T('巴爾加化作了塵土。', 'Barga crumbles to dust.'), T('希雅：「父親……我們替您報仇了。」', 'Thea: "Father… we have avenged you."'), T('米菈：「可是，真正的仇人是那個暗帝。希雅，我們走吧——去找能打倒他的人。」', 'Mira: "But the real enemy is that Dark Emperor. Thea, let\'s go — and find the one who can defeat him."')]);
+          if (A.flag('c4q_edgan')) await A.say(T('希雅：「姐姐，父親說要我們幸福地活下去……我們一定做得到的。」', 'Thea: "Sister, Father told us to live happily… I know we can."'));
           return A.chapterEnd(4);
         } }] } } }));
 
@@ -381,8 +561,27 @@ export function buildMaps() {
     npcs: [
       { x: 8, y: 7, look: 'dancerw', dir: 'down', when: (A) => !A.flag('c5_attack'), talk: (A) => A.say(T('莉娜：「嘿嘿，我學會了變身魔法喔！看——我變成你的樣子了！」', 'Lina: "Hee hee, I learned a transformation spell! Look — now I look just like you!"')) },
       { x: 11, y: 3, look: 'soldier', dir: 'down', when: (A) => !A.flag('c5_attack'), talk: (A) => A.say(T('劍術老師：「這座村子藏在山中，是為了保護你啊。」', 'Sword master: "This village is hidden in the mountains to protect you."')) },
-      { x: 4, y: 11, look: 'man', dir: 'down', when: (A) => A.flag('c5_attack'), talk: (A) => A.say(T('（村子已經化為廢墟……只剩下風聲。）', '(The village lies in ruins… only the wind remains.)')) },
+      { x: 4, y: 11, look: 'man', dir: 'down', when: (A) => A.flag('c5_attack'), talk: (A) => A.say(A.flag('c5q_feather') ? T('（村子已經化為廢墟……只剩下風聲。）', '(The village lies in ruins… only the wind remains.)')
+        : T('（村子已經化為廢墟……莉娜以前常站的地方，好像有什麼東西在發光。）', '(The village lies in ruins… where Lina used to stand, something glints.)')) },
     ] }), {
+    // side story: Lina's feather cap
+    checks: {
+      '8,7': async (A) => {
+        if (!A.flag('c5_attack') || A.flag('c5q_feather')) return;
+        await A.says([T('地上有一頂沾滿灰塵的羽毛帽……是莉娜的帽子。', 'A dusty feathered cap lies on the ground… Lina\'s cap.'), T('（莉娜變成你的樣子，替你引開了魔物……）', '(Lina took your shape and led the monsters away from you…)')]);
+        A.set('c5q_feather'); A.give('feather'); await A.say(T('撿起了莉娜的羽毛帽。', 'You pick up Lina\'s Feather Cap.'));
+      },
+      '8,9': async (A) => {
+        if (!A.flag('c5_attack') || A.flag('c5q_lina')) return;
+        if (!A.has('feather') || !A.flag('skysword')) return A.say(T('花叢在風中輕輕搖曳。（總有一天，再回到這裡吧。）', 'The flowers sway in the wind. (Someday, come back here.)'));
+        A.music('sad');
+        await A.says([T('你把莉娜的羽毛帽，輕輕放在了花叢旁。', 'You gently set Lina\'s cap down beside the flowers.'), T('一陣溫暖的風吹過，花朵輕輕地搖曳。', 'A warm breeze passes, and the flowers nod.'),
+          T('「……不要哭喔。我一直都在這裡。」', '"…Don\'t cry. I\'m always right here."'), T('彷彿聽見了莉娜的聲音。', 'It is as if you heard Lina\'s voice.'),
+          T('帽子上的一根羽毛，閃著溫暖的光，落在你的手心。', 'One feather from the cap glows softly and drifts into your hand.')]);
+        A.take('feather'); A.set('c5q_lina'); A.give('lifering'); A.sfx('chest'); await A.say(T('得到了生命戒指！', 'Received a Ring of Life!'));
+        A.music('town');
+      },
+    },
     onEnter: async (A) => { if (A.ch() === 5 && !A.flag('c5_intro')) { A.set('c5_intro'); await A.says([T('這裡是藏在群山之中的小村子。', 'This is a little village hidden among the mountains.'), T('你在這裡長大，每天跟著劍術老師練劍，和青梅竹馬的莉娜一起玩耍。', 'You grew up here, training with the sword master every day and playing with your childhood friend Lina.'), T('（去村長家看看吧。村長住在右上方的房子。）', '(Visit the elder. He lives in the house at the top right.)')]); } } });
   M.c5_cross = makeTown({ buildings: { tl: 'inn', tr: 'item', bl: 'equip', br: 'church' }, deco: [[8, 9, 'S'], [1, 2, 'F'], [18, 11, 'F']],
     keepers: { tl: innKeeper(20), tr: shopKeeper(ITEMS5), bl: shopKeeper(EQUIP.cross), br: priest },
@@ -391,7 +590,55 @@ export function buildMaps() {
       { x: 11, y: 4, look: 'merchant', dir: 'down', talk: (A) => A.say(T('馬車商人：「夥伴多了就用馬車吧！最多四人上陣，其餘的人坐在馬車裡，隨時可以換人。不過洞窟和塔裡進不去喔。」', 'Wagon merchant: "With a big party you\'ll want a wagon! Four fight up front; the rest ride along and can swap in anytime — just not in caves and towers."')) },
       { x: 14, y: 7, look: 'sage', dir: 'down', talk: (A) => A.say(A.flag('skysword') ? T('賢者：「天空之劍已經甦醒，北方魔王城的瘴氣消散了！」', 'Sage: "The Sword of Heaven has awakened. The blight around the Dark Castle in the north is gone!"') : T('賢者：「南方的天空神殿沉睡著天空之劍。只有聚齊所有被引導者，神殿的門才會打開。」', 'Sage: "The Sword of Heaven sleeps in the Sky Shrine to the south. Only when all the guided ones are gathered will its doors open."')) },
       { x: 5, y: 7, look: 'woman', dir: 'down', move: true, talk: (A) => A.say(T('旅人：「山中的隧道開通之後，四面八方的旅人都聚到這裡來了。」', 'Traveller: "Since the mountain tunnels opened, travellers from every corner come through here."')) },
+      // side story: a campfire for the chosen ones
+      { x: 18, y: 4, look: 'man', dir: 'left', talk: async (A) => {
+        if (A.flag('c5q_camp')) return A.say(T('吟遊詩人：「那一夜的營火，我會寫成歌，唱給後世的人聽。」', 'Bard: "I will make a song of that campfire night, and sing it for those who come after."'));
+        if (!['r_kaldor', 'r_rhea', 'r_tolle', 'r_mira'].every((f) => A.flag(f))) return A.say(T('吟遊詩人：「等所有被引導的人都聚齊了，再來聽我唱歌吧。」', 'Bard: "When all the guided ones are gathered, come and hear me sing."'));
+        A.music('inn');
+        await A.says([T('吟遊詩人：「被引導的人們啊，今晚就在這裡升起營火吧。」', 'Bard: "Guided ones, light a campfire here tonight."'), T('夜深了。大家圍著營火坐了下來。', 'Night falls. Everyone sits down around the fire.'),
+          T('卡爾德：「我曾經只是為了國王的命令而揮劍。現在，我是為了你們。」', 'Kaldor: "Once I swung my sword because my king commanded it. Now I swing it for all of you."'),
+          T('莉雅：「我要找回父王和王宮的大家！還要讓全世界的人都能笑著練功！」', 'Rhea: "I\'ll bring back Father and everyone from the palace! And make a world where everyone can train with a smile!"'),
+          T('巴洛：「老夫答應了一位老朋友，要把旅途上的風景，全都說給他聽。」', 'Barlow: "I promised an old friend I would describe every sight of this journey to him."'),
+          T('卡斯：「我只是祈禱，每個人都能平安地回家。」', 'Cass: "I only pray that everyone gets home safely."'),
+          T('托爾：「妮爾和兒子在等我。我要當一個讓他們驕傲的爸爸。」', 'Tolle: "Nell and my boy are waiting. I want to be a father they can be proud of."'),
+          T('米菈：「父親要我們幸福地活下去。所以我要為了明天而跳舞。」', 'Mira: "Father told us to live happily. So I will dance for tomorrow."'),
+          T('希雅：「水晶球裡映出的未來……是大家一起回家的畫面喔。」', 'Thea: "The future in my crystal ball… shows all of us going home together."'),
+          T('奧林：「……我的拳頭，會守護這堆營火。」', 'Orin: "…My fists will guard this fire."'),
+          T('你看著每個人被火光照亮的臉，想起了莉娜。', 'You look at their faces in the firelight, and think of Lina.'), T('——你已經不再是一個人了。', '— You are not alone any more.'),
+          T('吟遊詩人：「這是星之墜飾，獻給今晚的勇者們。」', 'Bard: "This Star Pendant is for tonight\'s heroes."')]);
+        A.set('c5q_camp'); A.give('starpendant'); A.sfx('chest'); await A.say(T('得到了星之墜飾！', 'Received a Star Pendant!'));
+        A.music('town');
+      } },
+      rancher(1, 4),
     ] });
+  M.c5_cross.onEnter = async (A) => {
+    if (!A.flag('c5_cross_seen')) {
+      A.set('c5_cross_seen');
+      await A.says([T('你一個人走出了群山。', 'You walk out of the mountains alone.'), T('莉娜的笑容、村子的燈火……都已經不在了。', 'Lina\'s smile, the lamps of the village… all of it is gone.'),
+        T('但是在前方，一定有等待著你的人。', 'But somewhere ahead, there are people waiting for you.')]);
+    }
+  };
+  // first visits that set the scene
+  M.c1_village.onEnter = async (A) => {
+    if (A.ch() === 1 && !A.flag('c1_thistle')) {
+      A.set('c1_thistle');
+      await A.says([T('薊村一片寂靜，連狗叫聲都聽不見。', 'Thistle is silent. Not even a dog barks.'), T('家家戶戶緊閉門窗，只有一位母親站在路邊，一直望著東方的洞窟。', 'Every door and shutter is closed. Only one mother stands by the road, staring east toward the cave.')]);
+    }
+  };
+  M.c3_lake.onEnter = async (A) => {
+    if (A.ch() === 3 && A.has('goldstatue') && !A.flag('c3_home')) {
+      A.set('c3_home');
+      await A.says([T('托爾抱著沉甸甸的黃金像，回到了湖畔鎮。', 'Tolle comes home to Lakeside, hugging the heavy golden statue.'), T('托爾：「這下就湊得到錢了……妮爾、兒子，你們等著！」', 'Tolle: "Now I can raise the money… Nell, son, just you wait!"')]);
+    }
+  };
+  M.c4_oasis.onEnter = async (A) => {
+    if (A.ch() === 4 && !A.flag('c4_show')) {
+      A.set('c4_show');
+      await A.says([T('綠洲劇場的舞台上，米菈的舞蹈讓全場屏住了呼吸。', 'On the oasis stage, Mira\'s dance holds the whole theatre breathless.'), T('每一次旋轉，都像是在對天上的父親訴說著什麼。', 'Every turn seems to be telling something to their father in the sky.'),
+        T('希雅：（姐姐又在跳那支舞了……父親最喜歡的那支。）', 'Thea: (She\'s dancing that one again… Father\'s favourite.)'), T('演出結束後，姐妹倆在後台緊緊握住了彼此的手。', 'After the show, the sisters hold hands tightly backstage.'),
+        T('米菈：「希雅，是時候了。我們去找巴爾加。」', 'Mira: "Thea, it\'s time. Let\'s go and find Barga."')]);
+    }
+  };
   Object.assign(M, dungeon('c5_shrine', 71, 'shrine', 2, { enc: 'shrine', bg: 'shrine', name: ['天空神殿', 'Sky Shrine'], music: 'castle',
     floors: { 1: { chests: [{ item: 'skyarmor' }, { item: 'elfwater' }, { item: 'leaf' }] },
       2: { chests: [{ item: 'elfwater' }, { gold: 2000 }], tiles: [{ at: (a) => [a.end[0], a.end[1] - 1], c: 'A' }],
@@ -415,15 +662,15 @@ export function buildMaps() {
 }
 export const CHAPTERS = {
   1: { title: ['第一章　王宮戰士卡爾德', 'Chapter 1: Kaldor, Royal Knight'], start: ['c1_castle', 9, 4, 'up'], party: [['kaldor', 1, { w: 'copper', a: 'clothes' }]], gold: 120, bag: { herb: 2 },
-    intro: [['北國布雷索王國。', 'The northern kingdom of Bressel.'], ['南方的薊村，孩子們接連失蹤……', 'In Thistle, to the south, children are vanishing…'], ['國王召來了忠誠的王宮戰士——卡爾德。', 'The king summons his loyal knight — Kaldor.']] },
+    intro: [['北國布雷索王國。', 'The northern kingdom of Bressel.'], ['南方的薊村，孩子們接連失蹤……', 'In Thistle, to the south, children are vanishing…'], ['國王召來了忠誠的王宮戰士——卡爾德。', 'The king summons his loyal knight — Kaldor.'], ['卡爾德從小在城裡長大，是個不善言詞、卻比誰都溫柔的人。', 'Kaldor grew up in the castle: a man of few words, and kinder than anyone.'], ['他還不知道，這將是一段改變世界的旅程的開始。', 'He does not yet know this is the start of a journey that will change the world.']] },
   2: { title: ['第二章　武鬥公主莉雅', 'Chapter 2: Rhea, the Martial Princess'], start: ['c2_palace', 17, 7, 'left'], party: [['rhea', 3, { w: 'claw', a: 'clothes' }]], joinLater: { barlow: [3, { w: 'stick', a: 'clothes' }], cass: [3, { w: 'stick', a: 'leather' }] }, gold: 140, bag: { herb: 3 },
-    intro: [['東方的桑達王國。', 'The eastern kingdom of Sandar.'], ['公主莉雅比起刺繡，更喜歡拳腳功夫。', 'Princess Rhea prefers fighting to embroidery.'], ['她的夢想，是成為世界上最強的武術家。', 'Her dream is to become the strongest fighter in the world.']] },
+    intro: [['東方的桑達王國。', 'The eastern kingdom of Sandar.'], ['公主莉雅比起刺繡，更喜歡拳腳功夫。', 'Princess Rhea prefers fighting to embroidery.'], ['她的夢想，是成為世界上最強的武術家。', 'Her dream is to become the strongest fighter in the world.'], ['可是最近，疼愛她的父王突然說不出話來了。', 'But lately, the father who dotes on her has suddenly lost his voice.'], ['莉雅望著房間牆上的裂縫，下定了決心。', 'Rhea looks at the crack in her bedroom wall, and makes up her mind.']] },
   3: { title: ['第三章　商人托爾', 'Chapter 3: Tolle the Merchant'], start: ['c3_lake', 4, 4, 'up'], party: [['tolle', 3, { w: 'copper', a: 'leather' }]], gold: 120, bag: { herb: 2 },
-    intro: [['西方的湖畔鎮。', 'Lakeside, in the west.'], ['在武器店打工的托爾，有個大大的夢想——', 'Tolle, who works at the weapon shop, has a big dream —'], ['開一間屬於自己的店。', 'to open a shop of his own.']] },
+    intro: [['西方的湖畔鎮。', 'Lakeside, in the west.'], ['在武器店打工的托爾，有個大大的夢想——', 'Tolle, who works at the weapon shop, has a big dream —'], ['開一間屬於自己的店。', 'to open a shop of his own.'], ['為了溫柔的妻子妮爾，和最愛爸爸的兒子。', 'For his gentle wife Nell, and the son who adores him.'], ['托爾今天也早早出了門。', 'Today, as always, Tolle sets out early.']] },
   4: { title: ['第四章　米菈與希雅', 'Chapter 4: Mira and Thea'], start: ['c4_oasis', 4, 4, 'up'], party: [['mira', 4, { w: 'whip', a: 'clothes' }], ['thea', 4, { w: 'stick', a: 'clothes' }]], joinLater: { orin: [6, { w: 'claw', a: 'chain' }] }, gold: 160, bag: { herb: 3 },
-    intro: [['南方沙漠的綠洲鎮。', 'An oasis town in the southern desert.'], ['舞孃米菈和占卜師希雅，是鍊金術師艾德根的女兒。', 'Mira the dancer and Thea the fortune teller are the daughters of the alchemist Edgan.'], ['姐妹倆在劇場工作，一心只想找到殺父仇人——巴爾加。', 'The sisters work at the theatre, living for one thing: to find their father\'s killer, Barga.']] },
+    intro: [['南方沙漠的綠洲鎮。', 'An oasis town in the southern desert.'], ['舞孃米菈和占卜師希雅，是鍊金術師艾德根的女兒。', 'Mira the dancer and Thea the fortune teller are the daughters of the alchemist Edgan.'], ['姐妹倆在劇場工作，一心只想找到殺父仇人——巴爾加。', 'The sisters work at the theatre, living for one thing: to find their father\'s killer, Barga.'], ['米菈的舞讓人著迷，希雅的占卜從不出錯。', 'Mira\'s dancing enchants everyone; Thea\'s fortunes are never wrong.'], ['可是姐妹倆，已經很久沒有真心地笑過了。', 'But it has been a long time since either sister truly smiled.']] },
   5: { title: ['第五章　被引導的人們', 'Chapter 5: The Chosen Ones'], start: ['c5_hidden', 4, 4, 'up'], party: [['hero', 3, { w: 'copper', a: 'leather' }]], gold: 120, bag: { herb: 3 },
-    intro: [['你，就是預言中的勇者。', 'You are the Hero of the prophecy.'], ['四個章節的人們，都被命運引導著……', 'The people of the four chapters have all been guided by fate…'], ['走向同一個目的地。', 'toward the same destination.']] },
+    intro: [['你，就是預言中的勇者。', 'You are the Hero of the prophecy.'], ['四個章節的人們，都被命運引導著……', 'The people of the four chapters have all been guided by fate…'], ['走向同一個目的地。', 'toward the same destination.'], ['而在群山深處的小村子裡，一個少年正在練劍。', 'And in a little village deep in the mountains, a young person is practising with a sword.'], ['他還不知道，平凡的日子，今天就要結束了。', 'They do not yet know that their ordinary days end today.']] },
 };
 export const ENDING = [
   ['暗帝索爾札倒下了。', 'Solzar, the Dark Emperor, has fallen.'],
@@ -432,6 +679,10 @@ export const ENDING = [
   ['莉雅與父王重逢。巴洛和卡斯依然每天被她的拳頭追著跑。', 'Rhea is reunited with her father. Barlow and Cass are still chased by her fists every day.'],
   ['托爾的商店成了世界第一的大商店，妮爾和兒子都以他為傲。', 'Tolle\'s Emporium becomes the greatest shop in the world, and Nell and his son are proud of him.'],
   ['米菈和希雅回到綠洲，在父親的墓前獻上了花。奧林守護著她們的劇場。', 'Mira and Thea return to the oasis and lay flowers on their father\'s grave. Orin guards their theatre.'],
+  ['薊村的老婦人病好了，她的兒子當上了衛兵隊長。提姆和小黑每天都在村口練劍。', 'In Thistle the old woman is well again, and her son is Captain of the Guard. Tim and Kuro practise swordplay at the village gate every day.'],
+  ['巴洛常去泉水鎮，把旅途上的風景一一說給梅爾文聽。', 'Barlow often visits Springvale, describing every sight of the journey to Melvin.'],
+  ['綠洲的劇場裡，多了一個跟著米菈跳舞的小女孩。', 'At the oasis theatre, a little girl now dances alongside Mira.'],
+  ['魔物牧場的魔物們，也在陽光下快樂地奔跑著。', 'And at the Monster Ranch, the monsters run happily in the sunshine.'],
   ['而勇者——回到了群山中的村子。', 'And the Hero — returns to the village in the mountains.'],
   ['廢墟中，一朵小小的花，正在風中搖曳。', 'Among the ruins, a small flower sways in the wind.'],
   ['「歡迎回來。」似乎有人這麼說。', '"Welcome home," someone seems to say.'],

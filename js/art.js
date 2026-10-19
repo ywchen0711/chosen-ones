@@ -1,4 +1,5 @@
 // All the graphics are drawn in code: 16px tiles, little 4-direction people, and cute outlined monsters.
+import { MONSTERS } from './data.js';
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 const cache = new Map();
 const memo = (key, fn) => { let v = cache.get(key); if (!v) { v = fn(); cache.set(key, v); } return v; };
@@ -109,6 +110,12 @@ export const LOOKS = {
   villain: { skin: '#b8a0c8', hair: '#2a1a3a', cloth: '#3a1a4a', cloth2: '#ff3a3a', style: 'wizard' },
 };
 export function person(look, dir, frame) {
+  if (look.startsWith('mon:')) return memo(`p:${look}:${frame}`, () => {          // a monster in the party
+    const md = MONSTERS[look.slice(4)] || MONSTERS.slime, c = mk(16, 16), g = c.getContext('2d');
+    g.fillStyle = 'rgba(0,0,0,0.25)'; g.beginPath(); g.ellipse(8, 14.5, 5, 1.5, 0, 0, 7); g.fill();
+    g.drawImage(monster(md.art, md.col), 0, 0, 96, 96, 0, frame ? 0 : 1, 16, 16);
+    return c;
+  });
   return memo(`p:${look}:${dir}:${frame}`, () => {
     const L = LOOKS[look] || LOOKS.man, c = mk(16, 16), g = c.getContext('2d');
     const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
