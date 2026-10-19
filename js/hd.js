@@ -205,7 +205,8 @@ export function create(canvas) {
         case 'wall': case 'cwall': case 'crack': (walls[t] = walls[t] || []).push([x, y]);
           if ((L.torches || info.dungeon) && FLAT.has(at(x, y + 1) || '') && !isWall(at(x, y + 1)) && r < 0.22 && !torchSpots.some((s) => Math.abs(s[0] - x) + Math.abs(s[1] - y) < 4)) torchSpots.push([x, y]);
           break;
-        case 'tree': (r < 0.25 && !info.town ? pines : trees).push([x + 0.5 + (r - 0.5) * 0.2, y + 0.55, 1.05 + r * 0.25]); break;
+        // neighbours stand at clearly different depths: overlapping boards in one plane fought over every pixel and flickered
+        case 'tree': (r < 0.25 && !info.town ? pines : trees).push([x + 0.5 + (r - 0.5) * 0.2, y + 0.42 + (((x * 7 + y * 3) % 4 + 4) % 4) * 0.07, 1.05 + r * 0.25]); break;
         case 'forest': for (let k = 0; k < 3; k++) { const q = hash(x * 3 + k, y * 7 - k); (q < 0.4 ? pines : trees).push([x + 0.2 + ((k * 0.37 + q * 0.5) % 0.75), y + 0.25 + k * 0.28, 0.62 + q * 0.18]); } break;
         case 'mountain': mountains.push([x + 0.5, y + 0.5, 0.9 + r * 0.35, r]); break;
         case 'hills': hills.push([x + 0.3, y + 0.35, 0.8], [x + 0.72, y + 0.75, 0.6]); break;
