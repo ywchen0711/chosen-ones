@@ -416,13 +416,13 @@ export function buildMaps() {
 export const CHAPTERS = {
   1: { title: ['第一章　王宮戰士卡爾德', 'Chapter 1: Kaldor, Royal Knight'], start: ['c1_castle', 9, 4, 'up'], party: [['kaldor', 1, { w: 'copper', a: 'clothes' }]], gold: 120, bag: { herb: 2 },
     intro: [['北國布雷索王國。', 'The northern kingdom of Bressel.'], ['南方的薊村，孩子們接連失蹤……', 'In Thistle, to the south, children are vanishing…'], ['國王召來了忠誠的王宮戰士——卡爾德。', 'The king summons his loyal knight — Kaldor.']] },
-  2: { title: ['第二章　武鬥公主莉雅', 'Chapter 2: Rhea, the Martial Princess'], start: ['c2_palace', 17, 7, 'left'], party: [['rhea', 1, { w: 'claw', a: 'clothes' }]], joinLater: { barlow: [1, { w: 'stick', a: 'clothes' }], cass: [1, { w: 'stick', a: 'clothes' }] }, gold: 100, bag: { herb: 3 },
+  2: { title: ['第二章　武鬥公主莉雅', 'Chapter 2: Rhea, the Martial Princess'], start: ['c2_palace', 17, 7, 'left'], party: [['rhea', 3, { w: 'claw', a: 'clothes' }]], joinLater: { barlow: [3, { w: 'stick', a: 'clothes' }], cass: [3, { w: 'stick', a: 'leather' }] }, gold: 140, bag: { herb: 3 },
     intro: [['東方的桑達王國。', 'The eastern kingdom of Sandar.'], ['公主莉雅比起刺繡，更喜歡拳腳功夫。', 'Princess Rhea prefers fighting to embroidery.'], ['她的夢想，是成為世界上最強的武術家。', 'Her dream is to become the strongest fighter in the world.']] },
-  3: { title: ['第三章　商人托爾', 'Chapter 3: Tolle the Merchant'], start: ['c3_lake', 4, 4, 'up'], party: [['tolle', 1, { w: 'stick', a: 'clothes' }]], gold: 60, bag: { herb: 2 },
+  3: { title: ['第三章　商人托爾', 'Chapter 3: Tolle the Merchant'], start: ['c3_lake', 4, 4, 'up'], party: [['tolle', 3, { w: 'copper', a: 'leather' }]], gold: 120, bag: { herb: 2 },
     intro: [['西方的湖畔鎮。', 'Lakeside, in the west.'], ['在武器店打工的托爾，有個大大的夢想——', 'Tolle, who works at the weapon shop, has a big dream —'], ['開一間屬於自己的店。', 'to open a shop of his own.']] },
-  4: { title: ['第四章　米菈與希雅', 'Chapter 4: Mira and Thea'], start: ['c4_oasis', 4, 4, 'up'], party: [['mira', 1, { w: 'whip', a: 'clothes' }], ['thea', 1, { w: 'stick', a: 'clothes' }]], joinLater: { orin: [3, { w: 'copper', a: 'leather' }] }, gold: 80, bag: { herb: 3 },
+  4: { title: ['第四章　米菈與希雅', 'Chapter 4: Mira and Thea'], start: ['c4_oasis', 4, 4, 'up'], party: [['mira', 4, { w: 'whip', a: 'clothes' }], ['thea', 4, { w: 'stick', a: 'clothes' }]], joinLater: { orin: [6, { w: 'claw', a: 'chain' }] }, gold: 160, bag: { herb: 3 },
     intro: [['南方沙漠的綠洲鎮。', 'An oasis town in the southern desert.'], ['舞孃米菈和占卜師希雅，是鍊金術師艾德根的女兒。', 'Mira the dancer and Thea the fortune teller are the daughters of the alchemist Edgan.'], ['姐妹倆在劇場工作，一心只想找到殺父仇人——巴爾加。', 'The sisters work at the theatre, living for one thing: to find their father\'s killer, Barga.']] },
-  5: { title: ['第五章　被引導的人們', 'Chapter 5: The Chosen Ones'], start: ['c5_hidden', 4, 4, 'up'], party: [['hero', 1, { w: 'copper', a: 'clothes' }]], gold: 50, bag: { herb: 3 },
+  5: { title: ['第五章　被引導的人們', 'Chapter 5: The Chosen Ones'], start: ['c5_hidden', 4, 4, 'up'], party: [['hero', 3, { w: 'copper', a: 'leather' }]], gold: 120, bag: { herb: 3 },
     intro: [['你，就是預言中的勇者。', 'You are the Hero of the prophecy.'], ['四個章節的人們，都被命運引導著……', 'The people of the four chapters have all been guided by fate…'], ['走向同一個目的地。', 'toward the same destination.']] },
 };
 export const ENDING = [

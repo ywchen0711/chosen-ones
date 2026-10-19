@@ -83,7 +83,7 @@ const A = {
   setTile: (x, y, c) => { tilesNow[y][x] = c; S.mapEdits = S.mapEdits || {}; (S.mapEdits[mapId] = S.mapEdits[mapId] || {})[`${x},${y}`] = c; },
   async join(id) {
     const ch = CHAPTERS[S.ch];
-    if (!S.members[id]) { const [lv, eq] = (ch.joinLater && ch.joinLater[id]) || [1, {}]; S.members[id] = newMember(id, Math.max(lv, id === 'pupu' ? leader().lv : lv), eq); }
+    if (!S.members[id]) { const [lv, eq] = (ch.joinLater && ch.joinLater[id]) || [1, {}]; S.members[id] = newMember(id, Math.max(lv, S.active.length ? leader().lv - (id === 'pupu' ? 0 : 1) : lv), eq); }
     const m = S.members[id]; healFull(m); if (m.hp <= 0) m.hp = m.maxhp;
     if (S.active.length < 4) S.active.push(id); else S.wagon.push(id);
     sfx('levelup'); music('inn');

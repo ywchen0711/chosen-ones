@@ -71,5 +71,11 @@ for (const [boss, ps] of [['shade', [['kaldor', 7, { w: 'copper', a: 'leather', 
   const m = newMember('kaldor', 20), base = [atk(m), defense(m)]; m.eq.g = 'powergloves'; m.eq.b = 'wingboots'; m.eq.r = 'strring';
   ok('gauntlets, boots and rings add to attack and defence', atk(m) === base[0] + 8 + 5 && defense(m) > base[1], `${base} -> ${atk(m)},${defense(m)}`);
 }
+// ---- difficulty: every chapter's first field is fair at the level the chapter starts at
+{
+  const { PLAN, fairLevel } = await import('./balance.mjs');
+  const firsts = [...new Map(PLAN.map((p) => [p[0], p])).values()].map((p) => PLAN.find((q) => q[0] === p[0]));
+  for (const [ch, zone, ms] of firsts) { const f = fairLevel(ms, zone), start = CHAPTERS[ch].party[0][1]; ok(`chapter ${ch}: the first field (${zone}) is fair from the start`, f.lv <= start + 1, `fair at Lv ${f.lv}, starts at Lv ${start}`); }
+}
 console.log(fails ? `test: ${fails} failed` : 'test: all passed');
 process.exit(fails ? 1 : 0);
