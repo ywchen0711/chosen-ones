@@ -25,7 +25,7 @@ function fitScreen() {
   glCanvas.style.display = hdOn() ? 'block' : 'none';
 }
 addEventListener('resize', fitScreen); fitScreen(); try { new ResizeObserver(fitScreen).observe(document.getElementById('wrap')); } catch (e) { /* ignore */ }
-import('./hd.js?v=5').then((m) => { try { HDR = m.create(glCanvas); } catch (e) { HDR = null; } fitScreen(); if (HDR && mode === 'title' && UI.stack.length <= 1) titleMenu(); }).catch(() => {});
+import('./hd.js?v=6').then((m) => { try { HDR = m.create(glCanvas); } catch (e) { HDR = null; } fitScreen(); if (HDR && mode === 'title' && UI.stack.length <= 1) titleMenu(); }).catch(() => {});
 function setHD(on) { hdPref = on; try { localStorage.setItem('co.hd', on ? '1' : '0'); } catch (e) { /* ignore */ } fitScreen(); }
 const hdLabel = () => T('畫面：', 'Graphics: ') + (hdPref ? 'HD-2D' : T('經典', 'Classic'));
 const MAPS = buildMaps();
@@ -344,6 +344,14 @@ async function zoomTo() {
   enterMap('world', p.x, p.y + 1, 'down'); return true;
 }
 const regionOf = (p) => (p.x <= 21 && p.y <= 21 ? 1 : p.x >= 38 && p.y <= 21 ? 2 : p.x <= 21 && p.y >= 23 ? 3 : p.x >= 38 && p.y >= 23 ? 4 : 5);
+// step out of a place onto the world map on the side it was left by (north edge → north of it, and so on), if that tile is open
+function leaveTo(p, side = 'down') {
+  const W = MAPS.world, ok = (x, y) => { const t = W.tiles[y] && TILE[W.tiles[y][x]]; return t && WALK.has(t) && !PLACES.some((q) => q.x === x && q.y === y) && !BARRIERS.some((b) => b.x === x && b.y === y && !S.flags[b.flag]); };
+  const [dx, dy] = DIRS[side];
+  if (ok(p.x + dx, p.y + dy)) return enterMap('world', p.x + dx, p.y + dy, side);
+  for (const d of ['down', 'up', 'left', 'right']) { const [ex, ey] = DIRS[d]; if (ok(p.x + ex, p.y + ey)) return enterMap('world', p.x + ex, p.y + ey, d); }
+  return enterMap('world', p.x, p.y + 1, 'down');
+}
 function exitDungeon() { const p = PLACES.find((q) => q.id === MAP.exitPlace); fade = 1; enterMap('world', p.x, p.y + 1, 'down'); }
 
 // ---------------------------------------------------------------- moving about
@@ -358,7 +366,7 @@ async function arrived() {
   S.x = P.x; S.y = P.y; S.dir = P.dir;
   const t = tileAt(P.x, P.y);
   // off the edge of a town or castle
-  if (t === null) { const p = MAP.place; enterMap('world', p.x, p.y + 1, 'down'); return; }
+  if (t === null) { const side = P.y < 0 ? 'up' : P.x < 0 ? 'left' : P.x >= MAP.w ? 'right' : 'down'; return leaveTo(MAP.place, side); }
   // a place on the world map
   if (MAP.world) { const p = PLACES.find((q) => q.x === P.x && q.y === P.y); if (p) return enterPlace(p); }
   // stairs
@@ -393,6 +401,8 @@ async function enterPlace(p) {
   }
   const m = MAPS[p.id]; sfx('door'); fade = 0.6;
   if (m.dungeon) { const [x, y] = m.anchor.start; return enterMap(p.id, x, y, 'down'); }
+  // towns have a north gate too: walking in from the north comes in through it
+  if (m.town && P.dir === 'down') return enterMap(p.id, 9, 0, 'down');
   return enterMap(p.id, 9, m.h - 1, 'up');
 }
 async function check() {

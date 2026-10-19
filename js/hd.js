@@ -198,6 +198,12 @@ export function create(canvas) {
     const glowMat = (c) => col(c, { emissive: c, emissiveIntensity: 2.2 });
     const wallH = info.dungeon ? 1.1 : 0.9;
     const isWall = (t) => t === 'wall' || t === 'cwall' || t === 'crack';
+    // trees lean back and stand tall, so they hide the tiles just north of them: in towns and castles a tree right below open
+    // ground (a road, a doorway, someone walking) is a low hedge, growing to full height five rows away
+    const open = (t) => t && t !== 'tree' && t !== 'forest' && !isWall(t);
+    const hedge = (x, y) => { if (info.kind === 'world') return 1; for (let k = 1; k <= 5; k++) if ([-1, 0, 1].some((d) => open(at(x + d, y - k)))) return [0.28, 0.4, 0.52, 0.66, 0.82][k - 1]; return 1; };
+    // neighbours stand at clearly different depths: overlapping boards in one plane fought over every pixel and flickered
+    const stagger = (x, y) => ((x * 7 + y * 3) % 4 + 4) % 4;
     for (let y = y0; y < y0 + H; y++) for (let x = x0; x < x0 + W; x++) {
       const t = at(x, y); if (!t || (isWallT(t) && buried(x, y))) continue;
       const r = hash(x, y); cx = x; cy = y; grow = PLACE.has(t) ? 1.55 : 1;
@@ -205,9 +211,8 @@ export function create(canvas) {
         case 'wall': case 'cwall': case 'crack': (walls[t] = walls[t] || []).push([x, y]);
           if ((L.torches || info.dungeon) && FLAT.has(at(x, y + 1) || '') && !isWall(at(x, y + 1)) && r < 0.22 && !torchSpots.some((s) => Math.abs(s[0] - x) + Math.abs(s[1] - y) < 4)) torchSpots.push([x, y]);
           break;
-        // neighbours stand at clearly different depths: overlapping boards in one plane fought over every pixel and flickered
-        case 'tree': (r < 0.25 && !info.town ? pines : trees).push([x + 0.5 + (r - 0.5) * 0.2, y + 0.42 + (((x * 7 + y * 3) % 4 + 4) % 4) * 0.07, 1.05 + r * 0.25]); break;
-        case 'forest': for (let k = 0; k < 3; k++) { const q = hash(x * 3 + k, y * 7 - k); (q < 0.4 ? pines : trees).push([x + 0.2 + ((k * 0.37 + q * 0.5) % 0.75), y + 0.25 + k * 0.28, 0.62 + q * 0.18]); } break;
+        case 'tree': (r < 0.25 && !info.town ? pines : trees).push([x + 0.5 + (r - 0.5) * 0.2, y + 0.42 + stagger(x, y) * 0.07, 1.05 + r * 0.25, hedge(x, y)]); break;
+        case 'forest': for (let k = 0; k < 3; k++) { const q = hash(x * 3 + k, y * 7 - k); (q < 0.4 ? pines : trees).push([x + 0.2 + ((k * 0.37 + q * 0.5) % 0.75), y + 0.25 + k * 0.28 + stagger(x, y) * 0.04, 0.62 + q * 0.18]); } break;
         case 'mountain': mountains.push([x + 0.5, y + 0.5, 0.9 + r * 0.35, r]); break;
         case 'hills': hills.push([x + 0.3, y + 0.35, 0.8], [x + 0.72, y + 0.75, 0.6]); break;
         case 'rock': rocks.push([x + 0.5, y + 0.5, 1]); break;
@@ -267,9 +272,9 @@ export function create(canvas) {
     };
     {
       const [g, m, d] = treeBoard(treeCanvas('round'), 1.5, 2);
-      instanced(g, m, trees, ([x, y, s], P, Q, S) => { P.set(x, 0, y); Q.identity(); S.set(s, s, s); }, { depth: d });
+      instanced(g, m, trees, ([x, y, s, h = 1], P, Q, S) => { P.set(x, 0, y); Q.identity(); S.set(s, s * h, s * h); }, { depth: d });
       const [g2, m2, d2] = treeBoard(treeCanvas('pine'), 1.3, 1.9);
-      instanced(g2, m2, pines, ([x, y, s], P, Q, S) => { P.set(x, 0, y); Q.identity(); S.set(s, s, s); }, { depth: d2 });
+      instanced(g2, m2, pines, ([x, y, s, h = 1], P, Q, S) => { P.set(x, 0, y); Q.identity(); S.set(s, s * h, s * h); }, { depth: d2 });
     }
     {
       const g = keep(new THREE.ConeGeometry(0.62, 1.2, 6)); g.translate(0, 0.6, 0);
