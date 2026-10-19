@@ -25,7 +25,7 @@ function fitScreen() {
   glCanvas.style.display = hdOn() ? 'block' : 'none';
 }
 addEventListener('resize', fitScreen); fitScreen(); try { new ResizeObserver(fitScreen).observe(document.getElementById('wrap')); } catch (e) { /* ignore */ }
-import('./hd.js?v=3').then((m) => { try { HDR = m.create(glCanvas); } catch (e) { HDR = null; } fitScreen(); if (HDR && mode === 'title' && UI.stack.length <= 1) titleMenu(); }).catch(() => {});
+import('./hd.js?v=4').then((m) => { try { HDR = m.create(glCanvas); } catch (e) { HDR = null; } fitScreen(); if (HDR && mode === 'title' && UI.stack.length <= 1) titleMenu(); }).catch(() => {});
 function setHD(on) { hdPref = on; try { localStorage.setItem('co.hd', on ? '1' : '0'); } catch (e) { /* ignore */ } fitScreen(); }
 const hdLabel = () => T('畫面：', 'Graphics: ') + (hdPref ? 'HD-2D' : T('經典', 'Classic'));
 const MAPS = buildMaps();

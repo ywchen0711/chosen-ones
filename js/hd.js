@@ -330,7 +330,11 @@ export function create(canvas) {
 
   // ---------------------------------------------------------------- one frame
   let cam = null, battleK = 0, lastT = 0, frameNo = 0;
-  const tgt = new THREE.Vector3();
+  const tgt = new THREE.Vector3(), snap = new THREE.Vector3();
+  // the sun's own axes, for snapping its shadow map to whole texels
+  const SUN_OFF = new THREE.Vector3(-9, 22, 11), LZ = SUN_OFF.clone().normalize();
+  const LX = new THREE.Vector3(0, 1, 0).cross(LZ).normalize(), LY = LZ.clone().cross(LX).normalize();
+  const TEXEL = (sun.shadow.camera.right - sun.shadow.camera.left) / sun.shadow.mapSize.x;
   function render(st) {
     if (!world || world.key !== st.map.key) build(st.map);
     const dt = Math.min(0.1, Math.max(0, st.t - lastT)); lastT = st.t;
@@ -345,8 +349,11 @@ export function create(canvas) {
     const pitch = PITCH - battleK * 0.22, dist = DIST - battleK * 6;
     tgt.set(cam.x + 0.5, 0, cam.y + 0.5 + battleK * 0.5);
     camera.position.set(tgt.x, tgt.y + dist * Math.sin(pitch), tgt.z + dist * Math.cos(pitch)); camera.lookAt(tgt);
-    // sun and shadows follow the camera
-    sun.position.set(tgt.x - 9, 22, tgt.z + 11); sun.target.position.copy(tgt); sun.target.updateMatrixWorld();
+    // sun and shadows follow the camera, but only in whole shadow-map texels: sliding it smoothly made every shadow edge
+    // (trees above all) shimmer while the party walked
+    const a = Math.round(tgt.dot(LX) / TEXEL) * TEXEL, b = Math.round(tgt.dot(LY) / TEXEL) * TEXEL, c = tgt.dot(LZ);
+    snap.copy(LX).multiplyScalar(a).addScaledVector(LY, b).addScaledVector(LZ, c);
+    sun.position.copy(snap).add(SUN_OFF); sun.target.position.copy(snap); sun.target.updateMatrixWorld();
     // light: the lantern in the dark, the nearest torches
     lantern.position.set(st.camX + 0.5, 1.3, st.camY + 0.7); lantern.intensity = W.dark ? 10 : 0;
     const near = W.flames.map((fl) => [Math.hypot(fl.x - tgt.x, fl.z - tgt.z), fl]).sort((a, b) => a[0] - b[0]);
