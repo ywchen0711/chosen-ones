@@ -98,7 +98,7 @@ const SIG_ONE = ['heavy', 'stun', 'drain', 'bolt'];
 async function chooseCommand(G, B, m) {
   const sd = sigOf(m);
   for (;;) {
-    const ci = await menu([T('攻擊', 'Attack'), T('法術', 'Spells'), T('防禦', 'Defend'), T('道具', 'Items'), ...(sd ? [T(...sd.sig)] : [])], { x: 8, y: 160, title: nm(m) });
+    const ci = await menu([T('攻擊', 'Attack'), T('法術', 'Spells'), T('防禦', 'Defend'), T('道具', 'Items'), ...(sd ? [T(...sd.sig)] : [])], { x: 8, y: sd ? 134 : 160, title: nm(m) });
     if (ci < 0) return null;                               // back to the previous member
     if (ci === 4) { let t = null; if (SIG_ONE.includes(sd.sigAct)) { t = await chooseTarget(G, B, 'one', m); if (t === undefined) continue; } return { type: 'sig', t }; }
     if (ci === 0) { const t = await chooseTarget(G, B, 'one', m); if (t === undefined) continue; return { type: 'attack', t }; }
