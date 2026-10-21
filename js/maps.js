@@ -434,6 +434,8 @@ export function buildMaps() {
       await A.saveOffer(T('妮爾', 'Nell'));
     } }, tr: shopKeeper(ITEMS1), bl: shopKeeper(EQUIP.lake), br: innKeeper(10) },
     npcs: [
+      // the town has no church, so a travelling priest keeps one in the square (save, revive, cure)
+      { x: 16, y: 7, look: 'priestn', dir: 'down', talk: async (A) => { await A.say(T('巡迴神父：「我在各地旅行，為人們祈禱。這裡雖然沒有教會，有需要的話儘管找我。」', 'Travelling priest: "I wander from town to town, praying for folk. There is no church here, but come to me if you need one."')); return A.church(); } },
       { x: 8, y: 7, look: 'oldman', dir: 'down', talk: async (A) => {
         if (A.ch() === 5) {
           if (A.flag('r_tolle')) return A.say(T('老店主：「托爾的店生意很好喔，快去看看吧！」', 'Old shopkeeper: "Tolle\'s shop is doing great business. Go and see!"'));
