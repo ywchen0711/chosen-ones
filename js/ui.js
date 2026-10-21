@@ -80,7 +80,7 @@ export function menu(items, opts = {}) {
     const cols = opts.cols || 1, rows = Math.ceil(items.length / cols), per = opts.rows || Math.min(rows, 9);
     const colW = opts.colW || Math.max(...items.map((it) => measure(it.label) + (it.right ? measure(it.right) + 14 : 0))) + 22;
     const w = opts.w || Math.min(240, colW * cols + 12), h = per * 14 + 14 + (opts.title ? 14 : 0);
-    const x = opts.x ?? 8, y = opts.y ?? 8;
+    const x = opts.x ?? 8, y = Math.max(4, Math.min(opts.y ?? 8, VH - 4 - h));   // never past the bottom of the screen
     let sel = Math.min(opts.start || 0, items.length - 1), top = 0;
     const win = push({
       draw() {
