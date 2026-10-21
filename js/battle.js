@@ -227,12 +227,45 @@ async function monsterAct(G, B, mo) {
     if (!hurt) act = 'attack';
     else { const n = Math.min(hurt.maxhp - hurt.hp, Math.round(Math.min(hurt.maxhp * 0.18, 60 + hurt.maxhp * 0.05))); hurt.hp += n; await msg(T(`${mo.label}施展了治療！${hurt.label}恢復了 ${n} 點 HP！`, `${mo.label} casts Heal! ${hurt.label} recovers ${n} HP!`)); return; }
   }
+  const power = mo.d.atk * (mo.rage ? 1.3 : 1), sig = mo.d.sig ? T(...mo.d.sig) : '';
+  if (act === 'rage') {
+    if (mo.rage) act = 'attack';
+    else { mo.rage = true; await msg(T(`${mo.label}${sig}！攻擊力提升了！`, `${mo.label} uses ${sig}! Its attack rises!`)); return; }
+  }
+  if (act === 'heavy' || act === 'stun' || act === 'drain') {
+    const t = target(); if (!t) return;
+    await msg(T(`${mo.label}使出了${sig}！`, `${mo.label} uses ${sig}!`));
+    if (act === 'heavy' && Math.random() < 0.15 + Math.max(0, agiOf(t) - mo.d.agi) / 500) { await msg(T(`${nm(t)}閃開了！`, `${nm(t)} dodges!`)); return; }
+    const n = hitMember(t, power, act === 'heavy' ? 1.6 : act === 'stun' ? 0.9 : 1);
+    await damageMember(G, B, t, n);
+    if (act === 'drain' && n > 0 && mo.hp < mo.maxhp) { const h = Math.min(mo.maxhp - mo.hp, Math.ceil(n / 2)); mo.hp += h; await msg(T(`${mo.label}恢復了 ${h} 點 HP！`, `${mo.label} recovers ${h} HP!`)); }
+    if (act === 'stun' && t.hp > 0 && !hasFx(t, 'nosleep') && Math.random() < 0.35) { t.sleep = 1; await msg(T(`${nm(t)}動彈不得！`, `${nm(t)} can't move!`)); }
+    return;
+  }
+  if (act === 'sweep') {
+    await msg(T(`${mo.label}使出了${sig}！`, `${mo.label} uses ${sig}!`));
+    for (const p of liveParty(G)) await damageMember(G, B, p, hitMember(p, power, 0.45));
+    return;
+  }
+  if (act === 'daze') {
+    await msg(T(`${mo.label}灑出了${sig}！`, `${mo.label} scatters ${sig}!`));
+    let any = false;
+    for (const p of liveParty(G)) if (!hasFx(p, 'nosleep') && Math.random() < 0.3) { p.sleep = 1; any = true; await msg(T(`${nm(p)}頭昏眼花！`, `${nm(p)} is dazed!`)); }
+    if (!any) await msg(T('大家都撐住了。', 'Everyone shakes it off.'));
+    return;
+  }
+  if (act === 'bolt') {
+    const t = target(); if (!t) return;
+    await msg(T(`${mo.label}放出了${sig}！`, `${mo.label} fires ${sig}!`));
+    await damageMember(G, B, t, ri(Math.round(power * 0.3), Math.round(power * 0.4)));
+    return;
+  }
   if (act === 'attack' || act === 'double' || act === 'poison') {
     for (let k = 0; k < (act === 'double' ? 2 : 1); k++) {
       const t = target(); if (!t) return;
       await msg(k ? T(`${mo.label}再次攻擊！`, `${mo.label} attacks again!`) : T(`${mo.label}的攻擊！`, `${mo.label} attacks!`));
       if (Math.random() < 0.03 + Math.max(0, agiOf(t) - mo.d.agi) / 500) { await msg(T(`${nm(t)}閃開了！`, `${nm(t)} dodges!`)); continue; }
-      await damageMember(G, B, t, hitMember(t, mo.d.atk));
+      await damageMember(G, B, t, hitMember(t, power));
       if (act === 'poison' && t.hp > 0 && !hasFx(t, 'nopoison') && Math.random() < 0.35) { t.poison = true; await msg(T(`${nm(t)}中毒了！`, `${nm(t)} is poisoned!`)); }
     }
     return;

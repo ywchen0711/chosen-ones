@@ -406,6 +406,23 @@ export const GEN_MONSTERS = 456;
   // the hand-made monsters join at the level of the first area they live in
   ZORDER.forEach((zone, zi) => { for (const grp of ZONES[zone]) for (const [id] of grp) if (MONSTERS[id].lv === undefined) MONSTERS[id].lv = ZLV[zi]; });
 }
+// signature moves: every monster that would otherwise only swing at you gets the move its kind is known for
+// heavy: a big blow that sometimes misses · stun: a blow that may leave you unable to act · drain: heals itself by half
+// rage: its attack rises for the rest of the fight · sweep: hits everyone, lighter · daze: may stop several of you a turn
+// bolt: raw magic that ignores armour
+const SIG = {
+  slime: ['stun', '黏液纏身', 'Goo Grab'], bat: ['drain', '吸血', 'Bloodsuck'], rabbit: ['heavy', '角突', 'Horn Thrust'],
+  skeleton: ['heavy', '斷骨斬', 'Bone Cleave'], wolf: ['rage', '嚎叫', 'Howl'], knight: ['stun', '盾擊', 'Shield Bash'],
+  golem: ['heavy', '重壓', 'Crush'], scorpion: ['stun', '麻痺尾針', 'Numbing Sting'], beast: ['sweep', '橫掃', 'Sweep'],
+  shroom: ['daze', '孢子雲', 'Spore Cloud'], bird: ['sweep', '旋風', 'Gale'], imp: ['heavy', '小刀突刺', 'Knife Jab'],
+  mage: ['bolt', '魔力彈', 'Arcane Bolt'], ghost: ['drain', '吸魂', 'Soul Drain'], snake: ['stun', '纏繞', 'Constrict'],
+  plant: ['daze', '花粉', 'Pollen'], dragon: ['sweep', '尾擊', 'Tail Sweep'],
+};
+for (const m of Object.values(MONSTERS)) {
+  if (m.boss || !SIG[m.art] || !m.acts.every(([a]) => a === 'attack')) continue;
+  const [act, zh, en] = SIG[m.art], w = m.acts.reduce((s, [, x]) => s + x, 0);
+  m.acts.push([act, Math.max(1, Math.round(w / 2))]); m.sig = [zh, en];
+}
 // a random group for an area: half the time some of its monsters are their kin instead
 export function encounter(zone, rnd = Math.random) {
   const opts = ZONES[zone], g = opts[Math.floor(rnd() * opts.length)], mix = rnd() < 0.5;
