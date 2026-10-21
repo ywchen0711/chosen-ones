@@ -421,7 +421,9 @@ const SIG = {
 for (const m of Object.values(MONSTERS)) {
   if (m.boss || !SIG[m.art] || !m.acts.every(([a]) => a === 'attack')) continue;
   const [act, zh, en] = SIG[m.art], w = m.acts.reduce((s, [, x]) => s + x, 0);
-  m.acts.push([act, Math.max(1, Math.round(w / 2))]); m.sig = [zh, en];
+  // each kind has its own habit: from a 20% to a 40% chance a turn, drawn at random every turn
+  const h = [...m.name[1]].reduce((s, c) => (s * 31 + c.charCodeAt(0)) % 997, 7), p = 0.2 + (h % 21) / 100;
+  m.acts.push([act, w * p / (1 - p)]); m.sig = [zh, en];
 }
 // a random group for an area: half the time some of its monsters are their kin instead
 export function encounter(zone, rnd = Math.random) {
