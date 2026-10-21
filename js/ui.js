@@ -39,7 +39,8 @@ export function wrap(str, width) {
 let blink = 0;
 export const tickUI = (dt) => { blink += dt; for (const w of stack) w.tick && w.tick(dt); };
 export const drawUI = () => { for (const w of stack) w.draw(); };
-export function key(k) { const w = stack[stack.length - 1]; if (w && w.key) w.key(k); }
+export let backAt = 0;                       // when B / Esc was last pressed (battles use it to stop auto-attack)
+export function key(k) { if (k === 'back') backAt = performance.now(); const w = stack[stack.length - 1]; if (w && w.key) w.key(k); }
 const push = (w) => { stack.push(w); return w; };
 const pop = (w) => { const i = stack.indexOf(w); if (i >= 0) stack.splice(i, 1); };
 const cursor = (x, y) => { if (Math.floor(blink * 2.5) % 2 === 0) text('▶', x, y); };

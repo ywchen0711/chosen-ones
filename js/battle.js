@@ -4,6 +4,7 @@ import { MONSTERS, SPELLS, ITEMS, CHARS, GOLD_RATE, canRecruit } from './data.js
 import { atk, defense, alive, gainXp, bagTake, agiOf, hasFx } from './party.js';
 import { monster as monsterArt, backdrop } from './art.js';
 import { box, text, say, menu, S as SC, VW } from './ui.js';
+import * as UI from './ui.js';
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const ri = (a, b) => Math.floor(rand(a, b + 1));
@@ -328,15 +329,26 @@ export async function battle(G, spec, opts = {}) {
   for (const p of G.active()) { p.buff = false; p.oomph = false; p.rage = false; p.defending = false; p.sleep = 0; }
   const names = [...new Set(mons.map((m) => m.name))];
   await say(names.length === 1 && mons.length > 1 ? T(`${names[0]}們出現了！`, `${mons.length} ${names[0]}s appear!`) : names.length === 1 ? T(`${names[0]}出現了！`, `${names[0]} appears!`) : T(`${names.join('、')}出現了！`, `${names.join(', ')} appear!`), { auto: 0.9 });
-  let result = null, round = 0;
+  let result = null, round = 0, auto = false, autoAt = 0;
   while (!result) {
     round++;
     // ---- what the party does
     let plan = [], flee = false;
-    for (;;) {
-      const top = await menu([T('戰鬥', 'Fight'), T('逃跑', 'Run'), ...(G.ch() === 5 ? [T('作戰', 'Tactics')] : [])], { x: 8, y: 160, cancel: false });
-      if (top === 1) { flee = true; break; }
-      if (top === 2) { await G.chooseTactic(); continue; }
+    // auto-attack: everyone just fights, round after round, until B / Esc is pressed
+    if (auto && UI.backAt > autoAt) { auto = false; await msg(T('停止自動攻擊。', 'Auto-attack stopped.')); }
+    if (auto) plan = G.active().map((m) => (m.hp <= 0 || m.sleep > 0 ? null : G.isAuto(m) ? 'ai' : 'atk'));
+    else for (;;) {
+      const keys = ['fight', 'auto', 'run', ...(G.ch() === 5 ? ['tactics'] : [])];
+      const names = { fight: T('戰鬥', 'Fight'), auto: T('自動攻擊', 'Auto-attack'), run: T('逃跑', 'Run'), tactics: T('作戰', 'Tactics') };
+      const top = keys[await menu(keys.map((k) => names[k]), { x: 8, y: 160, cancel: false })];
+      if (top === 'run') { flee = true; break; }
+      if (top === 'tactics') { await G.chooseTactic(); continue; }
+      if (top === 'auto') {
+        auto = true; autoAt = performance.now();
+        await msg(T('全體自動攻擊！（按 B / Esc 停止）', 'Everyone attacks on their own! (B / Esc to stop)'));
+        plan = G.active().map((m) => (m.hp <= 0 || m.sleep > 0 ? null : G.isAuto(m) ? 'ai' : 'atk'));
+        break;
+      }
       const act = G.active(); plan = []; let i = 0, back = false;
       while (i < act.length) {
         const m = act[i];
@@ -369,7 +381,7 @@ export async function battle(G, spec, opts = {}) {
       if (a.who.mon) { if (a.who.hp > 0 && !a.who.gone) await monsterAct(G, B, a.who); }
       else if (a.who.hp > 0) {
         if (a.who.sleep > 0) { a.who.sleep--; await msg(T(`${nm(a.who)}還在睡覺。`, `${nm(a.who)} is still asleep.`)); continue; }
-        await memberAct(G, B, a.who, a.c === 'ai' ? aiCommand(G, B, a.who) : a.c);
+        await memberAct(G, B, a.who, a.c === 'ai' ? aiCommand(G, B, a.who) : a.c === 'atk' ? { type: 'attack', t: liveMons(B).sort((x, y) => x.hp - y.hp)[0] } : a.c);
       }
       // the last boss changes shape
       for (const mo of B.mons) if (mo.hp <= 0 && mo.d.next && !mo.changed) {
