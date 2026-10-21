@@ -248,15 +248,42 @@ async function spellMenu() {
     else await say(T('沒有效果。', 'Nothing happens.'));
   }
 }
+// what m could put on from the bag in a slot, and whether any of it is an upgrade (attack + defence, and a little for speed)
+const gearScore = (m, k) => { const it = ITEMS[k], t = { ...m, eq: { ...m.eq, [it.slot]: k } }; return atk(t) - atk(m) + defense(t) - defense(m) + (agiOf(t) - agiOf(m)) * 0.5; };
+const bagFor = (m, slot) => Object.keys(S.bag).filter((k) => ITEMS[k] && ITEMS[k].slot === slot && canEquip(ITEMS[k], m.id));
+const upgradeIn = (m, slot) => bagFor(m, slot).some((k) => gearScore(m, k) > 0);
+const upgrades = (m) => SLOTS.filter(([s]) => upgradeIn(m, s)).length;
+// the equipment screen: Q / E (or left / right) moves to the previous / next member
 async function equipMenu() {
-  const mi = await pickMember(T('誰的裝備？', 'Whose equipment?')); if (mi < 0) return;
-  const m = members()[mi], slots = SLOTS.map(([k, zh, en]) => [k, T(zh, en)]);
+  const list = members(), slots = SLOTS.map(([k, zh, en]) => [k, T(zh, en)]); if (!list.length) return;
+  let mi = 0, start = 0;
   for (;;) {
-    const close = UI.panel(() => { box(8, 176, 240, 56); text(`${nameOf(m.id)}  Lv ${m.lv}`, 16, 182, { color: '#ffe080' }); text(`${T('攻擊力', 'Attack')} ${atk(m)}   ${T('防禦力', 'Defence')} ${defense(m)}`, 16, 198); text(`${T('速度', 'Agility')} ${agiOf(m)}`, 16, 212); });
-    const si = await menu(slots.map(([k, l]) => ({ label: l, right: m.eq[k] ? T(ITEMS[m.eq[k]].name) : '—' })), { x: 8, y: 8, w: 240 });
-    close(); if (si < 0) return;
-    const slot = slots[si][0], opts = Object.keys(S.bag).filter((k) => ITEMS[k] && ITEMS[k].slot === slot && canEquip(ITEMS[k], m.id));
-    const ii = await menu([{ label: T('（卸下）', '(remove)') }, ...opts.map((k) => ({ label: T(ITEMS[k].name), right: short(ITEMS[k]), key: k }))], { x: 60, y: 30, info: (it) => { if (it && it.key) { const [da, dd] = gearDiff(m, it.key); box(150, 150, 98, 30); text(`${T('攻', 'ATK')} ${da >= 0 ? '+' : ''}${da}`, 157, 156, { size: 7 * SC, color: da > 0 ? '#7fff8a' : '#ccc' }); text(`${T('防', 'DEF')} ${dd >= 0 ? '+' : ''}${dd}`, 157, 168, { size: 7 * SC, color: dd > 0 ? '#7fff8a' : '#ccc' }); itemInfo(it.key, { w: 138 }); } } });
+    const m = list[mi];
+    const close = UI.panel(() => {
+      box(8, 152, 240, 82);
+      text(`${T('攻擊力', 'Attack')} ${atk(m)}   ${T('防禦力', 'Defence')} ${defense(m)}   ${T('速度', 'Agility')} ${agiOf(m)}`, 16, 158, { size: 7 * SC });
+      text('▲', 16, 171, { size: 7 * SC, color: '#7fff8a' }); text(T('背包裡有更強的　', 'stronger in the bag  '), 26, 171, { size: 7 * SC, color: '#bbb' });
+      text(T('·數字 = 可換的件數', '·N = pieces you can wear'), 26 + UI.measure(T('背包裡有更強的　', 'stronger in the bag  '), 7 * SC), 171, { size: 7 * SC, color: '#bbb' });
+      let x = 16, y = 186;
+      for (const [i, p] of list.entries()) {
+        const nm = nameOf(p.id).slice(0, EN ? 7 : 4), up = upgrades(p) > 0, w = UI.measure(nm, 7 * SC) + (up ? 10 : 0) + 8;
+        if (x + w > 244) { x = 16; y += 12; } if (y > 222) break;
+        text(nm, x, y, { size: 7 * SC, color: i === mi ? '#ffe080' : '#ccc' }); if (up) text('▲', x + w - 16, y, { size: 7 * SC, color: '#7fff8a' });
+        x += w;
+      }
+    });
+    const items = slots.map(([k, l]) => {
+      const n = bagFor(m, k).length, up = upgradeIn(m, k);
+      return { label: l, right: m.eq[k] ? T(ITEMS[m.eq[k]].name) : '—', tag: up ? '▲' : n ? `·${n}` : '', tagColor: up ? '#7fff8a' : '#999' };
+    });
+    const title = list.length > 1 ? `◀Q  ${nameOf(m.id)}  Lv ${m.lv}  E▶` : `${nameOf(m.id)}  Lv ${m.lv}`;
+    const si = await menu(items, { x: 8, y: 8, w: 240, title, start, keys: list.length > 1 ? { prev: 'prev', next: 'next', left: 'prev', right: 'next' } : null });
+    close();
+    if (si === 'prev' || si === 'next') { mi = (mi + (si === 'next' ? 1 : list.length - 1)) % list.length; sfx('ok'); continue; }
+    if (si < 0) return;
+    start = si;
+    const slot = slots[si][0], opts = bagFor(m, slot).sort((a, b) => gearScore(m, b) - gearScore(m, a));
+    const ii = await menu([{ label: T('（卸下）', '(remove)') }, ...opts.map((k) => ({ label: T(ITEMS[k].name), right: short(ITEMS[k]), key: k, tag: gearScore(m, k) > 0 ? '▲' : '' }))], { x: 60, y: 30, info: (it) => { if (it && it.key) { const [da, dd] = gearDiff(m, it.key); box(150, 150, 98, 30); text(`${T('攻', 'ATK')} ${da >= 0 ? '+' : ''}${da}`, 157, 156, { size: 7 * SC, color: da > 0 ? '#7fff8a' : '#ccc' }); text(`${T('防', 'DEF')} ${dd >= 0 ? '+' : ''}${dd}`, 157, 168, { size: 7 * SC, color: dd > 0 ? '#7fff8a' : '#ccc' }); itemInfo(it.key, { w: 138 }); } } });
     if (ii < 0) continue;
     if (ii === 0) { if (m.eq[slot]) { bagAdd(S.bag, m.eq[slot]); m.eq[slot] = null; } } else equip(m, opts[ii - 1]);
   }
@@ -634,7 +661,7 @@ setInterval(() => { if (mapId !== prevMap) { prevMap = mapId; enteredAt = ftime;
 // ---------------------------------------------------------------- input
 const held = new Set(), order = [];
 const KEYMAP = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right',
-  z: 'ok', Z: 'ok', Enter: 'ok', ' ': 'ok', x: 'back', X: 'back', Escape: 'back', Backspace: 'back', m: 'mute', M: 'mute' };
+  z: 'ok', Z: 'ok', Enter: 'ok', ' ': 'ok', x: 'back', X: 'back', Escape: 'back', Backspace: 'back', m: 'mute', M: 'mute', q: 'prev', Q: 'prev', e: 'next', E: 'next' };
 function heldDir() { for (let i = order.length - 1; i >= 0; i--) if (held.has(order[i])) return order[i]; return null; }
 function press(k) {
   unlock();

@@ -91,7 +91,8 @@ export function menu(items, opts = {}) {
         for (let r = 0; r < per; r++) for (let c = 0; c < cols; c++) {
           const i = (top + r) * cols + c, it = items[i]; if (!it) continue;
           const ix = x + 6 + c * cw, iy = oy + r * 14;
-          text(it.label, ix + 10, iy, { color: it.disabled ? '#777' : '#fff' });
+          text(it.label, ix + 10, iy, { color: it.disabled ? '#777' : it.color || '#fff' });
+          if (it.tag) text(it.tag, ix + 14 + measure(it.label), iy + 1, { size: 7 * S, color: it.tagColor || '#7fff8a' });
           if (it.right) text(it.right, ix + cw - 4, iy, { align: 'right', color: it.disabled ? '#777' : '#ddd' });
           if (i === sel && !opts.inactive) cursor(ix, iy);
         }
@@ -99,6 +100,7 @@ export function menu(items, opts = {}) {
         if (opts.info) opts.info(items[sel], sel);
       },
       key(k) {
+        if (opts.keys && k in opts.keys) { pop(win); resolve(opts.keys[k]); return; }   // e.g. Q / E to switch whose menu it is
         const n = items.length;
         if (k === 'up') sel = (sel - cols + n) % n; else if (k === 'down') sel = (sel + cols) % n;
         else if (k === 'left' && cols > 1) sel = (sel - 1 + n) % n; else if (k === 'right' && cols > 1) sel = (sel + 1) % n;
