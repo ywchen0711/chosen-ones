@@ -92,10 +92,15 @@ async function chooseTarget(G, B, kind, actor) {
   }
   return null;
 }
+// a monster companion keeps the move its kind is known for (no MP needed)
+const sigOf = (m) => { const mid = CHARS[m.id] && CHARS[m.id].monster, d = mid && MONSTERS[mid]; return d && d.sig ? d : null; };
+const SIG_ONE = ['heavy', 'stun', 'drain', 'bolt'];
 async function chooseCommand(G, B, m) {
+  const sd = sigOf(m);
   for (;;) {
-    const ci = await menu([T('攻擊', 'Attack'), T('法術', 'Spells'), T('防禦', 'Defend'), T('道具', 'Items')], { x: 8, y: 160, title: nm(m) });
+    const ci = await menu([T('攻擊', 'Attack'), T('法術', 'Spells'), T('防禦', 'Defend'), T('道具', 'Items'), ...(sd ? [T(...sd.sig)] : [])], { x: 8, y: 160, title: nm(m) });
     if (ci < 0) return null;                               // back to the previous member
+    if (ci === 4) { let t = null; if (SIG_ONE.includes(sd.sigAct)) { t = await chooseTarget(G, B, 'one', m); if (t === undefined) continue; } return { type: 'sig', t }; }
     if (ci === 0) { const t = await chooseTarget(G, B, 'one', m); if (t === undefined) continue; return { type: 'attack', t }; }
     if (ci === 2) return { type: 'defend' };
     if (ci === 1) {
@@ -136,13 +141,14 @@ function aiCommand(G, B, m) {
       if (can('oomph') && ms.some((x) => x.d.boss)) { const t = party.filter((p) => p.hp > 0 && !p.oomph && CHARS[p.id].mp[0] === 0)[0]; if (t) return { type: 'spell', sp: 'oomph', t }; }
     }
   }
-  const ms = liveMons(B);
+  const ms = liveMons(B), sd = sigOf(m);
+  if (sd && Math.random() < 0.35 && !(sd.sigAct === 'rage' && m.rage) && !ms.every((x) => x.d.metal)) return { type: 'sig', t: ms.sort((a, b) => a.hp - b.hp)[0] };
   return { type: 'attack', t: ms.sort((a, b) => a.hp - b.hp)[0] };
 }
 
 // ---------------------------------------------------------------- doing it
 function hitMon(G, B, a, t, crit) {
-  const A = atk(a) * (a.oomph ? 2 : 1), D = t.d.def * (t.sap ? 0.5 : 1);
+  const A = atk(a) * (a.oomph ? 2 : 1) * (a.rage ? 1.3 : 1), D = t.d.def * (t.sap ? 0.5 : 1);
   if (t.d.metal) return crit ? ri(3, 6) : Math.random() < 0.5 ? 1 : 0;
   if (crit) return Math.round(A * rand(0.95, 1.1));
   const base = (A - D / 2) / 2;
@@ -162,7 +168,7 @@ async function damageMon(G, B, t, n) {
 async function damageMember(G, B, m, n) {
   m.hp = Math.max(0, m.hp - n); m.sleep = 0; pop(B, m, n); G.sfx('hurt');
   await msg(n > 0 ? T(`${nm(m)}受到 ${n} 點傷害！`, `${nm(m)} takes ${n} damage!`) : T(`${nm(m)}躲開了攻擊！`, `${nm(m)} dodges the blow!`));
-  if (m.hp <= 0) { m.oomph = false; m.poison = false; await msg(T(`${nm(m)}倒下了……`, `${nm(m)} has fallen…`)); }
+  if (m.hp <= 0) { m.oomph = false; m.rage = false; m.poison = false; await msg(T(`${nm(m)}倒下了……`, `${nm(m)} has fallen…`)); }
 }
 async function memberAct(G, B, m, c) {
   B.turn = m;
@@ -174,6 +180,32 @@ async function memberAct(G, B, m, c) {
     if (!crit && Math.random() < 0.03 + Math.max(0, t.d.agi - agiOf(m)) / 500) { await msg(T(`${t.label}閃開了！`, `${t.label} dodges!`)); return; }
     if (crit) await msg(T('會心一擊！', 'An excellent hit!'));
     await damageMon(G, B, t, hitMon(G, B, m, t, crit));
+    return;
+  }
+  if (c.type === 'sig') {
+    const sd = sigOf(m); if (!sd) return;
+    const act = sd.sigAct, sig = T(...sd.sig), ms = liveMons(B), one = () => (c.t && c.t.hp > 0 && !c.t.gone ? c.t : pick(liveMons(B)));
+    const stops = (t, p) => Math.random() < (t.d.metal ? 0 : t.d.boss ? p / 4 : p);
+    G.sfx('hit');
+    if (act === 'rage') {
+      if (m.rage) { await msg(T(`${nm(m)}使出了${sig}！但是已經沒有效果了。`, `${nm(m)} uses ${sig}! But it has no further effect.`)); return; }
+      m.rage = true; await msg(T(`${nm(m)}使出了${sig}！攻擊力提升了！`, `${nm(m)} uses ${sig}! Its attack rises!`)); return;
+    }
+    await msg(T(`${nm(m)}使出了${sig}！`, `${nm(m)} uses ${sig}!`));
+    if (act === 'sweep') { for (const t of ms) await damageMon(G, B, t, Math.round(hitMon(G, B, m, t, false) * 0.45)); return; }
+    if (act === 'daze') {
+      let any = false;
+      for (const t of ms) if (stops(t, 0.3)) { t.sleep = 1; any = true; await msg(T(`${t.label}頭昏眼花！`, `${t.label} is dazed!`)); }
+      if (!any) await msg(T('但是沒有效果。', 'But nothing happens.'));
+      return;
+    }
+    const t = one(); if (!t) return;
+    if (act === 'bolt') { if (t.d.metal) { await msg(T(`${t.label}對魔法毫無反應！`, `${t.label} shrugs off the magic!`)); return; } await damageMon(G, B, t, ri(Math.round(atk(m) * 0.3), Math.round(atk(m) * 0.4))); return; }
+    if (act === 'heavy' && Math.random() < 0.15 + Math.max(0, t.d.agi - agiOf(m)) / 500) { await msg(T(`${t.label}閃開了！`, `${t.label} dodges!`)); return; }
+    const n = Math.round(hitMon(G, B, m, t, false) * (act === 'heavy' ? 1.6 : act === 'stun' ? 0.9 : 1));
+    await damageMon(G, B, t, n);
+    if (act === 'drain' && n > 0 && m.hp < m.maxhp) { const h = Math.min(m.maxhp - m.hp, Math.ceil(n / 2)); m.hp += h; await msg(T(`${nm(m)}恢復了 ${h} 點 HP！`, `${nm(m)} recovers ${h} HP!`)); }
+    if (act === 'stun' && t.hp > 0 && stops(t, 0.35)) { t.sleep = 1; await msg(T(`${t.label}動彈不得！`, `${t.label} can't move!`)); }
     return;
   }
   if (c.type === 'item') {
@@ -293,7 +325,7 @@ export async function battle(G, spec, opts = {}) {
   const B = { mons, bg: opts.bg || 'field', shake: 0, pops: [], time: 0, turn: null, boss: mons.some((m) => m.d.boss) };
   G.setScene({ battle: true, draw: (g, dt) => drawBattle(G, B, g, dt) });
   G.music(B.boss ? 'boss' : 'battle');
-  for (const p of G.active()) { p.buff = false; p.oomph = false; p.defending = false; p.sleep = 0; }
+  for (const p of G.active()) { p.buff = false; p.oomph = false; p.rage = false; p.defending = false; p.sleep = 0; }
   const names = [...new Set(mons.map((m) => m.name))];
   await say(names.length === 1 && mons.length > 1 ? T(`${names[0]}們出現了！`, `${mons.length} ${names[0]}s appear!`) : names.length === 1 ? T(`${names[0]}出現了！`, `${names[0]} appears!`) : T(`${names.join('、')}出現了！`, `${names.join(', ')} appear!`), { auto: 0.9 });
   let result = null, round = 0;
@@ -397,7 +429,7 @@ export async function battle(G, spec, opts = {}) {
       }
     }
   }
-  for (const p of G.active()) { p.buff = false; p.oomph = false; p.defending = false; p.sleep = 0; }
+  for (const p of G.active()) { p.buff = false; p.oomph = false; p.rage = false; p.defending = false; p.sleep = 0; }
   G.setScene(null);
   return result;
 }
