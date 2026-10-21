@@ -1,6 +1,6 @@
 // The engine: title, chapters, walking the world and towns, talking, menus, shops, inns, churches, saving, and the ending.
 import { T, EN, LANG, setLang } from './i18n.js';
-import { CHARS, ITEMS, SPELLS, ZONES, SLOTS, FX, MONSTERS, encounter } from './data.js';
+import { CHARS, ITEMS, SPELLS, ZONES, SLOTS, FX, MONSTERS, SIGDESC, encounter } from './data.js';
 import { newMember, atk, defense, alive, healFull, bagAdd, bagTake, canEquip, statAt, agiOf } from './party.js';
 import { tile, person, wagon as wagonSprite, monster as monsterArt, LOOKS } from './art.js';
 import { buildMaps, TILE, WALK, PLACES, BARRIERS, worldZone, CHAPTERS, ENDING } from './maps.js';
@@ -275,6 +275,14 @@ async function statusMenu() {
     SLOTS.forEach(([k], i) => text(m.eq[k] ? T(ITEMS[m.eq[k]].name) : '—', 150, 34 + i * 11, { color: '#ccc', size: 7 * SC }));
     text(T('法術', 'Spells'), 150, 126, { color: '#ffe080', size: 7 * SC });
     m.spells.forEach((s, i) => text(T(SPELLS[s].name), 150 + (i % 2) * 48, 138 + Math.floor(i / 2) * 11, { size: 7 * SC }));
+    // a monster companion also shows the move its kind is known for
+    const md = CHARS[m.id].monster && MONSTERS[CHARS[m.id].monster];
+    if (md && md.sig) {
+      const y = 142 + Math.ceil(m.spells.length / 2) * 11;
+      text(T('招牌技能', 'Signature move'), 150, y, { color: '#ffe080', size: 7 * SC });
+      text(T(...md.sig), 150, y + 12, { size: 7 * SC });
+      text(T(...SIGDESC[md.sigAct]), 150, y + 23, { size: 6 * SC, color: '#aaa' });
+    }
     if (m.poison) text(T('中毒', 'Poisoned'), 18, 170, { color: '#8aff8a' });
   });
   await UI.waitKey(); close();

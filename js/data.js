@@ -418,12 +418,18 @@ const SIG = {
   mage: ['bolt', '魔力彈', 'Arcane Bolt'], ghost: ['drain', '吸魂', 'Soul Drain'], snake: ['stun', '纏繞', 'Constrict'],
   plant: ['daze', '花粉', 'Pollen'], dragon: ['sweep', '尾擊', 'Tail Sweep'],
 };
+// what each kind of move does, for the status screen
+export const SIGDESC = {
+  heavy: ['強力一擊，偶爾落空', 'A big blow; may miss'], stun: ['攻擊並可能使對手定身', 'Hits; may stop a turn'],
+  drain: ['攻擊並吸取 HP', 'Hits and drinks HP'], rage: ['提升自己的攻擊力', 'Raises its own attack'],
+  sweep: ['攻擊全體敵人', 'Hits every foe'], daze: ['可能使全體頭昏', 'May daze everyone'], bolt: ['無視防禦的魔法', 'Magic past armour'],
+};
 for (const m of Object.values(MONSTERS)) {
   if (m.boss || !SIG[m.art] || !m.acts.every(([a]) => a === 'attack')) continue;
   const [act, zh, en] = SIG[m.art], w = m.acts.reduce((s, [, x]) => s + x, 0);
   // each kind has its own habit: from a 20% to a 40% chance a turn, drawn at random every turn
   const h = [...m.name[1]].reduce((s, c) => (s * 31 + c.charCodeAt(0)) % 997, 7), p = 0.2 + (h % 21) / 100;
-  m.acts.push([act, w * p / (1 - p)]); m.sig = [zh, en];
+  m.acts.push([act, w * p / (1 - p)]); m.sig = [zh, en]; m.sigAct = act;
 }
 // a random group for an area: half the time some of its monsters are their kin instead
 export function encounter(zone, rnd = Math.random) {
