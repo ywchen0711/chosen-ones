@@ -1,6 +1,6 @@
 // Battles in the classic first-person style: monsters in front, the party's status above, messages below.
 import { T, EN } from './i18n.js';
-import { MONSTERS, SPELLS, ITEMS, CHARS, GOLD_RATE, canRecruit } from './data.js';
+import { MONSTERS, SPELLS, ITEMS, CHARS, GOLD_RATE, canRecruit, itemLines } from './data.js';
 import { atk, defense, alive, gainXp, bagTake, agiOf, hasFx } from './party.js';
 import { monster as monsterArt, backdrop } from './art.js';
 import { box, text, say, menu, S as SC, VW } from './ui.js';
@@ -116,7 +116,7 @@ async function chooseCommand(G, B, m) {
     if (ci === 3) {
       const usable = Object.keys(G.bag).filter((k) => ITEMS[k] && ['heal', 'cure', 'mp', 'revive'].includes(ITEMS[k].use));
       if (!usable.length) { await say(T('沒有可以使用的道具。', 'Nothing you can use here.')); continue; }
-      const ii = await menu(usable.map((k) => ({ label: T(ITEMS[k].name), right: `×${G.bag[k]}` })), { x: 88, y: 100 });
+      const ii = await menu(usable.map((k) => ({ label: T(ITEMS[k].name), right: `×${G.bag[k]}` })), { x: 88, y: 100, info: (it, sel) => UI.infoBox(itemLines(usable[sel]).map((p) => [T(...p), '#fff']), { top: true }) });
       if (ii < 0) continue;
       const t = await chooseTarget(G, B, ITEMS[usable[ii]].use === 'revive' ? 'dead' : 'ally', m);
       if (t === undefined) continue;

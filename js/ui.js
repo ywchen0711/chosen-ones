@@ -24,13 +24,13 @@ export function text(str, x, y, opts = {}) {
 }
 export function measure(str, size = 8 * S) { ctx.save(); ctx.font = `${size}px ${FONT}`; const w = ctx.measureText(str).width / S; ctx.restore(); return w; }
 // wrap text to a width (logical px); CJK breaks anywhere, English at spaces
-export function wrap(str, width) {
+export function wrap(str, width, size = 8 * S) {
   const out = [];
   for (const para of String(str).split('\n')) {
     let line = '';
     const tokens = EN ? para.split(/(\s+)/) : [...para];
     for (const tk of tokens) {
-      if (measure(line + tk) > width && line.trim()) { out.push(line.trimEnd()); line = tk.trimStart(); } else line += tk;
+      if (measure(line + tk, size) > width && line.trim()) { out.push(line.trimEnd()); line = tk.trimStart(); } else line += tk;
     }
     out.push(line);
   }
@@ -127,6 +127,12 @@ export function ask(str, options) {
   });
 }
 // a panel that just shows something until closed by the caller
+// a small box of notes (an item's description): lines are [text, colour]; at the bottom of the screen unless top, w wide
+export function infoBox(lines, { w = 240, top = false } = {}) {
+  const rows = lines.flatMap(([s, c]) => wrap(s, w - 14, 7 * S).map((t) => [t, c])).slice(0, 5), h = rows.length * 11 + 11, y = top ? 8 : 234 - h;
+  if (!rows.length) return;
+  box(8, y, w, h); rows.forEach(([t, c], i) => text(t, 14, y + 6 + i * 11, { size: 7 * S, color: c }));
+}
 export function panel(drawFn) { const w = push({ draw: drawFn }); return () => pop(w); }
 // wait for any key (used under panels)
 export function waitKey() { return new Promise((resolve) => { const w = push({ draw() {}, key(k) { if (k === 'ok' || k === 'back') { pop(w); resolve(k); } } }); }); }

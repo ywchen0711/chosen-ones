@@ -66,6 +66,7 @@ for (const [boss, ps] of [['shade', [['kaldor', 7, { w: 'copper', a: 'leather', 
   const drops = Object.values(MONSTERS).flatMap((d) => d.drops || []);
   ok('every monster that gives experience drops something', Object.entries(MONSTERS).every(([, d]) => !d.xp || (d.drops && d.drops.length)));
   ok('every drop is a real item with a sane chance', drops.every(([it, n]) => ITEMS[it] && n >= 1));
+  ok('every item has a description in both languages', Object.values(ITEMS).every((it) => it.desc && it.desc[0] && it.desc[1]), Object.keys(ITEMS).filter((k) => !ITEMS[k].desc).join(' '));
   ok('bosses always drop their treasure', ['shade', 'ironclaw', 'minegolem', 'barga', 'guardian'].every((b) => MONSTERS[b].drops.some(([, n]) => n === 1)));
   ok('each of the eight slots has gear', SLOTS.every(([k]) => gear.filter(([, it]) => it.slot === k).length >= 5), SLOTS.map(([k]) => k + gear.filter(([, it]) => it.slot === k).length).join(' '));
   const m = newMember('kaldor', 20), base = [atk(m), defense(m)]; m.eq.g = 'powergloves'; m.eq.b = 'wingboots'; m.eq.r = 'strring';

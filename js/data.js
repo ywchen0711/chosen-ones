@@ -176,6 +176,126 @@ export const FX = {
   nopoison: ['不會中毒', 'Immune to poison'], nosleep: ['不會睡著', 'Immune to sleep'], gold: ['戰鬥金幣 +25%', 'Battle gold +25%'],
   xp: ['經驗值 +15%', 'Experience +15%'], luck: ['寶物掉落率加倍', 'Monsters drop items twice as often'],
 };
+// what each item is, for the menus and shops
+const DESC = {
+  herb: ['藥效溫和的草藥，恢復一名同伴約 30～40 HP。', 'A gentle remedy: restores about 30-40 HP to one ally.'],
+  antidote: ['苦苦的草，嚼下去能解除一名同伴的中毒。', 'A bitter herb that cures one ally of poison.'],
+  holywater: ['在野外灑下，一段時間內弱小的魔物不會靠近。', 'Sprinkle it outdoors and weak monsters keep away a while.'],
+  wing: ['往天上一拋，就能飛回去過的城鎮。', 'Toss it skyward to fly back to a town you have visited.'],
+  elfwater: ['精靈釀的清水，恢復一名同伴約 30～40 MP。', 'Water brewed by elves: restores about 30-40 MP to one ally.'],
+  leaf: ['世界樹的葉子，能讓倒下的同伴復活。', 'A leaf of the World Tree: brings a fallen ally back.'],
+  ruby: ['閃閃發亮的紅寶石。商店會出好價錢收購。', 'A gleaming ruby. Shops will pay well for it.'],
+  sapphire: ['深藍色的寶石，比紅寶石更值錢。', 'A deep blue gem, worth even more than a ruby.'],
+  goldstatue: ['純金打造的雕像，非常沉重，也非常值錢。', 'A statue of solid gold: very heavy and worth a fortune.'],
+  songstone: ['會唱歌的神秘石頭，據說能讓失去聲音的人再次開口。', 'A stone that sings. They say it gives a lost voice back.'],
+  letter: ['年輕士兵寫給住在薊村東邊的母親的信。', 'A young soldier\'s letter to his mother in east Thistle.'],
+  starstone: ['在黑暗中發出微光的石頭。托爾的兒子想送給媽媽。', 'A stone that glows in the dark. Tolle\'s son wants it for his mum.'],
+  locket: ['在礦坑深處找到的舊墜子，背面刻著名字。', 'An old locket found deep in the mine, a name on its back.'],
+  desertrose: ['只在沙漠開的花，像玫瑰一樣的石頭結晶。', 'A crystal that blooms like a rose, found only in the desert.'],
+  feather: ['沾滿灰塵的羽毛帽。莉娜曾經戴著它。', 'A dusty feathered cap. Lina used to wear it.'],
+  stick: ['一根結實的橡木杖，誰都拿得動。', 'A sturdy oak staff anyone can swing.'],
+  dagger: ['輕巧的短劍，人人都能用。', 'A light blade anyone can use.'],
+  copper: ['新手劍士的第一把劍。', 'The first sword of many a young fighter.'],
+  claw: ['套在拳頭上的鐵爪，適合武鬥家。', 'Iron claws worn over the fists, for brawlers.'],
+  whip: ['舞孃姐妹愛用的皮鞭。', 'A leather whip, favoured by the dancing sisters.'],
+  spear: ['長長的鐵矛，能在敵人靠近前出手。', 'A long iron spear that strikes before the foe gets close.'],
+  magicstaff: ['注入魔力的手杖，魔法師也能拿來打人。', 'A staff full of magic; casters can hit with it too.'],
+  ironclaw: ['鋼鐵打造的利爪，比鐵爪銳利得多。', 'Claws of steel, far sharper than iron ones.'],
+  steel: ['鍛造精良的鋼劍，戰士的好夥伴。', 'A well-forged steel sword, a fighter\'s friend.'],
+  chainwhip: ['前端綁著鐵鏈的鞭子，打起來很痛。', 'A whip tipped with chain. It stings.'],
+  battleaxe: ['沉重的雙刃戰斧，需要力氣才揮得動。', 'A heavy double-bladed axe for the strong.'],
+  zombie: ['受過祝福的劍，能斬斷邪惡之物。', 'A blessed blade made to cut down the unholy.'],
+  demonclaw: ['以魔獸之牙打造的爪，鋒利無比。', 'Claws made from a great beast\'s fangs. Wickedly sharp.'],
+  sagestaff: ['賢者使用過的手杖，蘊含強大的力量。', 'A staff once held by a sage, humming with power.'],
+  platinum: ['白金打造的名劍，閃耀著光芒。', 'A shining blade of platinum.'],
+  skysword: ['傳說中天空勇者的劍。只有勇者能使用。', 'The legendary sword of the hero of the skies. Hero only.'],
+  boomerang: ['丟出去會飛回來的木製武器。', 'A wooden weapon that comes back when thrown.'],
+  holyknife: ['用聖銀打造的短刀，閃著清澈的光。', 'A short knife of hallowed silver, clear and bright.'],
+  rapier: ['細長輕巧的劍，揮起來身手更加靈活。', 'A slender, light sword that keeps you quick on your feet.'],
+  flail: ['鐵鏈連著鐵球的武器，砸下去力道驚人。', 'An iron ball on a chain. It lands hard.'],
+  thunderstaff: ['杖頭封著雷電之力的手杖。', 'A staff with lightning sealed in its head.'],
+  bastard: ['需要兩手握住的大劍，威力十足。', 'A great sword gripped with both hands. Hits hard.'],
+  dragonclaw: ['用龍的爪子打造的拳爪。', 'Fist claws made from a dragon\'s talons.'],
+  wizardwand: ['巫師的魔杖，讓持有者的動作更敏捷。', 'A wizard\'s wand that quickens its holder.'],
+  starwhip: ['像星光一樣閃爍的長鞭。', 'A long whip that glitters like starlight.'],
+  flamesword: ['劍身燃燒著火焰的魔劍。', 'A magic sword wreathed in flame.'],
+  demonaxe: ['魔神的巨斧，擁有恐怖的破壞力。', 'A demon lord\'s great axe, terrible in power.'],
+  miracle: ['會帶來奇蹟的劍，持有者的傷口會慢慢癒合。', 'A sword of miracles: its bearer\'s wounds slowly close.'],
+  clothes: ['普通的布衣。總比什麼都不穿好。', 'Plain cloth clothes. Better than nothing.'],
+  leather: ['鞣製皮革做的護甲，輕便又耐用。', 'Tanned leather armour, light and tough.'],
+  silk: ['用絲綢織成的法衣，魔法師愛穿。', 'A silken robe, loved by spellcasters.'],
+  chain: ['用鐵環編成的鎖子甲。', 'Mail woven from iron rings.'],
+  iron: ['厚重的鐵鎧，防禦力很高。', 'Heavy iron armour with solid protection.'],
+  magicrobe: ['織入魔力的法衣，輕巧又堅固。', 'A robe woven with magic, light yet strong.'],
+  steelmail: ['鋼鐵打造的鎧甲，戰士的首選。', 'Steel plate, the fighter\'s choice.'],
+  dancer: ['舞孃的華麗衣裳，意外地很堅固。', 'A dancer\'s dazzling costume, surprisingly tough.'],
+  platmail: ['白金打造的鎧甲，閃亮又堅固。', 'Armour of platinum, bright and strong.'],
+  skyarmor: ['傳說中天空勇者的鎧甲。只有勇者能穿。', 'The legendary armour of the hero of the skies. Hero only.'],
+  travel: ['旅人穿的結實衣服。', 'Hard-wearing clothes for the road.'],
+  scale: ['用魔物鱗片做成的鎧甲。', 'Armour made from monster scales.'],
+  cloak: ['能擋住攻擊的魔法斗篷。', 'A magic cloak that turns blows aside.'],
+  mirrorarmor: ['表面像鏡子一樣光亮的鎧甲。', 'Armour polished bright as a mirror.'],
+  angelrobe: ['天使的長袍，穿著的人每回合會恢復 HP。', 'An angel\'s robe: its wearer regains HP each round.'],
+  dragonmail: ['用龍鱗打造的鎧甲，堅不可摧。', 'Armour of dragon scales. Nearly unbreakable.'],
+  potlid: ['廚房裡的鍋蓋。可以當盾牌用……大概。', 'A kitchen pot lid. It works as a shield… sort of.'],
+  lshield: ['輕便的皮盾。', 'A light leather shield.'],
+  ishield: ['結實的鐵盾。', 'A sturdy iron shield.'],
+  mshield: ['施了魔法的盾牌，誰都能用。', 'An enchanted shield anyone can carry.'],
+  skyshield: ['傳說中天空勇者的盾。只有勇者能用。', 'The legendary shield of the hero of the skies. Hero only.'],
+  hat: ['簡單的皮帽。', 'A simple leather hat.'],
+  helm: ['保護頭部的鐵盔。', 'An iron helmet to guard your head.'],
+  tiara: ['黃金打造的頭冠，適合公主和舞孃。', 'A golden tiara fit for princesses and dancers.'],
+  skyhelm: ['傳說中天空勇者的頭盔。只有勇者能戴。', 'The legendary helm of the hero of the skies. Hero only.'],
+  bronzeshield: ['青銅打造的圓盾。', 'A round shield of bronze.'],
+  scaleshield: ['用魔物鱗片做成的盾牌。', 'A shield made from monster scales.'],
+  dragonshield: ['用龍鱗打造的盾牌，連火焰也擋得住。', 'A shield of dragon scales that even holds back fire.'],
+  goddess: ['女神祝福過的盾，持有者每回合會恢復 MP。', 'A shield blessed by the goddess: its bearer regains MP each round.'],
+  bandana: ['綁在頭上的布巾。', 'A cloth tied round the head.'],
+  hood: ['魔法師戴的尖帽子。', 'A pointed wizard\'s hat.'],
+  hairband: ['像風一樣輕的髮帶，讓人動作更快。', 'A hairband light as the wind. Makes you quicker.'],
+  steelhelm: ['鋼鐵打造的頭盔。', 'A helmet of steel.'],
+  greathelm: ['魔物頭骨般的巨大頭盔，防禦力極高。', 'A huge helm shaped like a fiend\'s skull. Very strong.'],
+  gloves: ['皮製手套，拳頭打起來更有力。', 'Leather gloves that put a little weight behind a punch.'],
+  silkgloves: ['絲質手套，讓施法的手更靈巧。', 'Silk gloves that keep a caster\'s hands nimble.'],
+  ironfist: ['鐵製護手，能保護手臂也能打人。', 'Iron gauntlets: guard your arms, hit a bit harder.'],
+  powergloves: ['能讓力量湧出的手套，攻擊大幅提升。', 'Gloves that pour strength into your blows.'],
+  steelfist: ['鋼製護手，攻守兼備。', 'Steel gauntlets, good for attack and defence.'],
+  kaiser: ['古代帝王使用的護手，攻擊力極高。', 'Gauntlets of an ancient emperor. Fearsome blows.'],
+  sandals: ['草編的鞋子，走起來輕快一點。', 'Woven straw sandals, a little light on the feet.'],
+  boots: ['結實的皮靴。', 'Sturdy leather boots.'],
+  ironboots: ['沉重的鐵靴，防禦不錯但不會變快。', 'Heavy iron boots: good guard, no extra speed.'],
+  silverboots: ['銀色的靴子，又輕又堅固。', 'Silver boots, light and strong.'],
+  wingboots: ['穿上後腳步像風一樣快。', 'Boots that make your feet as quick as the wind.'],
+  pegasus: ['傳說中天馬的靴子，速度大幅提升。', 'Boots of the winged horse. A huge burst of speed.'],
+  strring: ['戴上後力氣會變大的戒指。', 'A ring that makes its wearer stronger.'],
+  agiring: ['戴上後動作會變快的戒指。', 'A ring that makes its wearer faster.'],
+  wakering: ['戴上後不會被催眠的戒指。', 'A ring that keeps its wearer from falling asleep.'],
+  lifering: ['戴上後每回合會慢慢恢復 HP。', 'A ring that restores a little HP each round.'],
+  prayerring: ['戴上後每回合會慢慢恢復 MP。', 'A ring that restores a little MP each round.'],
+  critring: ['戴上後更容易打出會心一擊。', 'A ring that makes excellent hits more likely.'],
+  sagering: ['賢者的戒指，戰鬥獲得的經驗值增加。', 'A sage\'s ring: more experience from battles.'],
+  charm: ['保佑平安的護身符。', 'A lucky charm to keep you safe.'],
+  antidotal: ['戴上後不會中毒的項鍊。', 'A pendant that keeps poison away.'],
+  goldneck: ['黃金項鍊，戰鬥獲得的金幣增加。', 'A gold necklace: more gold from battles.'],
+  luckbell: ['叮噹作響的鈴鐺，魔物更容易掉落寶物。', 'A jingling bell: monsters drop treasure more often.'],
+  guardneck: ['有守護之力的項鍊，防禦力很高。', 'A pendant with a guardian\'s power. Strong defence.'],
+  starpendant: ['星星形狀的墜飾，同時提升力量和速度。', 'A star-shaped pendant that raises strength and speed.'],
+};
+for (const [k, d] of Object.entries(DESC)) if (ITEMS[k]) ITEMS[k].desc = d;
+// the lines an item's info box shows, as [中文, English] pairs: gear gets a line of stats and powers first
+export function itemLines(k) {
+  const it = ITEMS[k], out = []; if (!it) return out;
+  if (it.slot) {
+    const sl = SLOTS.find(([s]) => s === it.slot), zh = [sl[1]], en = [sl[2]];
+    if (it.atk) { zh.push(`攻擊+${it.atk}`); en.push(`ATK +${it.atk}`); }
+    if (it.def) { zh.push(`防禦+${it.def}`); en.push(`DEF +${it.def}`); }
+    for (const [s, v] of Object.entries(it.bonus || {})) { zh.push(`${{ str: '力量', agi: '速度', def: '體質' }[s]}+${v}`); en.push(`${{ str: 'STR', agi: 'AGI', def: 'RES' }[s]} +${v}`); }
+    if (it.fx) { zh.push(FX[it.fx][0]); en.push(FX[it.fx][1]); }
+    out.push([zh.join('  '), en.join('  ')]);
+  }
+  if (it.desc) out.push(it.desc);
+  return out;
+}
 export const GOLD_RATE = 1.5;          // battle gold (50% more than the monster table says)
 export const canEquip = (it, cid) => it.who === '*' || it.who.split(' ').includes(cid);
 
@@ -295,6 +415,34 @@ export const MAT = { slime: ['slimejelly', '史萊姆果凍', 'Slime Jelly', 20]
   snake: ['snakeskin', '蛇皮', 'Snakeskin', 120], beast: ['pelt', '魔獸毛皮', 'Beast Pelt', 250], scorpion: ['sting', '蠍子毒針', 'Scorpion Sting', 160], golem: ['core', '巨像之核', 'Golem Core', 600],
   dragon: ['scale2', '龍鱗片', 'Dragon Scale', 2500] };
 for (const [k, zh, en, price] of Object.values(MAT)) ITEMS[k] = { name: [zh, en], price, gem: true };
+const SELL = ['可以賣給商店。', 'Shops will buy it.'];
+for (const [k, zh, en] of [
+  ['strongherb', '效果更強的藥草，恢復一名同伴約 70～90 HP。', 'A stronger herb: restores about 70-90 HP to one ally.'],
+  ['specialherb', '珍貴的藥草，恢復一名同伴約 150～190 HP。', 'A rare herb: restores about 150-190 HP to one ally.'],
+  ['panacea', '萬能的靈藥，恢復一名同伴約 400～500 HP。', 'A cure-all: restores about 400-500 HP to one ally.'],
+  ['magicwater', '帶著魔力的水，恢復一名同伴約 12～18 MP。', 'Water with magic in it: restores about 12-18 MP to one ally.'],
+  ['prayerwater', '注滿祈禱的聖水，恢復一名同伴約 70～90 MP。', 'Water full of prayer: restores about 70-90 MP to one ally.'],
+  ['moonherb', '月光下採的草，解除一名同伴的中毒。', 'Picked by moonlight: cures one ally of poison.'],
+  ['phoenix', '不死鳥的羽毛，能讓倒下的同伴復活。', 'A phoenix feather: brings a fallen ally back.'],
+]) ITEMS[k].desc = [zh, en];
+for (const [k, zh, en] of [
+  ['pearl', '從海裡採到的圓潤珍珠。', 'A smooth pearl from the sea.'], ['emerald', '翠綠色的寶石。', 'A brilliant green gem.'],
+  ['amber', '封著古代小蟲的琥珀。', 'Amber with a tiny ancient insect inside.'], ['topaz', '金黃色的寶石。', 'A golden-yellow gem.'],
+  ['amethyst', '紫色的水晶。', 'A purple crystal.'], ['moonstone', '在暗處發出淡淡藍光的寶石。', 'A gem that glows faint blue in the dark.'],
+  ['stardust', '像星星碎片一樣閃爍的沙。', 'Sand that glitters like broken stars.'], ['goldnugget', '沉甸甸的金塊。', 'A heavy lump of gold.'],
+  ['silverbar', '鑄成條狀的銀。', 'A bar of cast silver.'], ['oldcoin', '不知哪個時代的古老錢幣。', 'A coin from some forgotten age.'],
+  ['dragonhorn', '龍的角，非常稀有。', 'A dragon\'s horn. Very rare.'], ['fairyfeather', '妖精掉下的羽毛，輕飄飄的。', 'A feather a fairy dropped, light as air.'],
+  ['ghostcloth', '幽靈身上的布，摸起來冰冰涼涼。', 'Cloth from a ghost, cold to the touch.'],
+  ['slimejelly', '史萊姆留下的果凍，黏呼呼的。', 'Wobbly jelly left by a slime.'], ['batwing', '蝙蝠的翅膀。', 'A bat\'s wing.'],
+  ['rabbitfur', '柔軟的兔毛。', 'Soft rabbit fur.'], ['spore', '裝著蘑菇孢子的小袋子。', 'A little pouch of mushroom spores.'],
+  ['ectoplasm', '幽靈留下的發光結晶。', 'A glowing crystal a ghost left behind.'], ['bonechip', '骷髏的骨頭碎片。', 'A chip of skeleton bone.'],
+  ['imphorn', '小惡魔的角。', 'An imp\'s horn.'], ['wolffang', '銳利的狼牙。', 'A sharp wolf fang.'],
+  ['plume', '怪鳥的大羽毛。', 'A great feather from a roc.'], ['magebead', '魔物術士身上的魔力珠子。', 'A bead of magic from a fiendish caster.'],
+  ['seed', '魔花的種子。', 'A seed from a fiendish flower.'], ['crest', '魔物騎士的徽章。', 'A monster knight\'s crest.'],
+  ['snakeskin', '蛇蛻下的皮。', 'A shed snakeskin.'], ['pelt', '魔獸厚厚的毛皮。', 'A beast\'s thick pelt.'],
+  ['sting', '蠍子的毒針。小心別刺到。', 'A scorpion\'s sting. Mind the point.'], ['core', '魔像體內的核心。', 'The core from inside a golem.'],
+  ['scale2', '堅硬的龍鱗。', 'A hard dragon scale.'],
+]) ITEMS[k].desc = [zh + SELL[0], en + ' ' + SELL[1]];
 
 // ---------------------------------------------------------------- generated gear: 8 tiers × many kinds × a few qualities
 const POW = [0, 9, 14, 20, 27, 35, 46, 58, 72];                  // weapon attack at each tier; the rest follows from it
@@ -321,6 +469,18 @@ const QUALS = [['', '', '', null], ['mighty', '剛力', 'Mighty', (s, t) => { s.
   ['flame', '火焰', 'Flame', (s) => { if (s.atk && !s.def) s.atk = r0(s.atk * 1.12) + 1; else s.def = r0((s.def || 0) * 1.1) + 1; }], ['frost', '冰霜', 'Frost', (s) => { s.def = r0((s.def || 0) * 1.15) + 1; }],
   ['blessed', '祝福', 'Blessed', (s, t, k) => { if (t >= 4) s.fx = ['regen', 'mpregen', 'nosleep', 'nopoison', 'crit', 'luck'][(t + k) % 6]; else s.bonus = { ...s.bonus, str: 1, agi: 1 }; }]];
 const GEN_GEAR = 366;
+const MAT_DESC = { 木: ['木頭做的', 'made of wood'], 骨: ['魔物骨頭做的', 'carved from monster bone'], 青銅: ['青銅打造的', 'cast in bronze'], 硬皮: ['硬化皮革製成的', 'of hardened hide'],
+  鐵: ['鐵製的', 'forged of iron'], 狼牙: ['鑲著狼牙的', 'set with wolf fangs'], 銀: ['銀製的', 'of silver'], 精鋼: ['精鋼鍛造的', 'of fine steel'],
+  秘銀: ['秘銀打造的', 'of mithril'], 月光: ['在月光下鍛造的', 'forged by moonlight'], 魔晶: ['魔晶雕成的', 'cut from magic crystal'], 龍骨: ['龍骨製成的', 'of dragonbone'],
+  星鐵: ['星鐵鍛造的', 'of star iron'], 聖靈: ['寄宿著聖靈之力的', 'touched by spirits'], 神聖: ['神聖之力加持的', 'blessed by the gods'], 混沌: ['蘊含混沌之力的', 'steeped in chaos'] };
+const KIND_DESC = { sword: ['劍', 'A sword'], claw: ['拳爪', 'Fist claws'], whip: ['長鞭', 'A whip'], staff: ['手杖', 'A staff'], axe: ['戰斧', 'A war axe'],
+  spear: ['長矛', 'A spear'], knife: ['短刀', 'A knife'], hammer: ['戰錘', 'A war hammer'], mail: ['鎧甲', 'Armour'], robe: ['法衣', 'A robe'],
+  garb: ['戰衣', 'Battle garb'], shield: ['盾牌', 'A shield'], buckler: ['小圓盾', 'A buckler'], helm: ['頭盔', 'A helm'], cap: ['帽子', 'A cap'],
+  gaunt: ['護手', 'Gauntlets'], boots: ['靴子', 'Boots'], ring: ['指環', 'A band'], amulet: ['護符', 'An amulet'] };
+const QUAL_DESC = { mighty: ['能增加力量。', 'Adds strength.'], gale: ['讓動作更快。', 'Makes you quicker.'], ward: ['特別堅固。', 'Extra sturdy.'],
+  flame: ['帶著火焰的熱度。', 'Warm with flame.'], frost: ['覆著一層寒霜。', 'Rimed with frost.'], blessed: ['受過祝福。', 'It has been blessed.'] };
+const genDesc = (kid, mzh, qid) => { const m = MAT_DESC[mzh], k = KIND_DESC[kid], q = QUAL_DESC[qid] || ['', ''];
+  return [`${m[0]}${k[0]}。${q[0]}`, `${k[1]}, ${m[1]}.${q[1] ? ' ' + q[1] : ''}`]; };
 {
   const names = new Set(Object.values(ITEMS).flatMap((it) => it.name)), lists = [];
   for (let t = 1; t <= 8; t++) {
@@ -336,7 +496,7 @@ const GEN_GEAR = 366;
     if (names.has(name[0]) || names.has(name[1])) continue;
     names.add(name[0]); names.add(name[1]);
     const s = stat(t); if (qf) qf(s, t, ki);
-    ITEMS[`g${t}_${kid}${qid ? '_' + qid : ''}`] = { name, slot, ...s, price: r0(PRICE[t] * (slot === 'w' || slot === 'a' ? 1 : 0.6) * (qi ? 1.3 : 1) * (s.fx ? 1.4 : 1)), who, tier: t, plain: !qi, gen: true };
+    ITEMS[`g${t}_${kid}${qid ? '_' + qid : ''}`] = { name, slot, ...s, price: r0(PRICE[t] * (slot === 'w' || slot === 'a' ? 1 : 0.6) * (qi ? 1.3 : 1) * (s.fx ? 1.4 : 1)), who, tier: t, plain: !qi, gen: true, desc: genDesc(kid, mzh, qid) };
     made++;
   }
 }

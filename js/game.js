@@ -1,6 +1,6 @@
 // The engine: title, chapters, walking the world and towns, talking, menus, shops, inns, churches, saving, and the ending.
 import { T, EN, LANG, setLang } from './i18n.js';
-import { CHARS, ITEMS, SPELLS, ZONES, SLOTS, FX, MONSTERS, SIGDESC, encounter } from './data.js';
+import { CHARS, ITEMS, SPELLS, ZONES, SLOTS, FX, MONSTERS, SIGDESC, itemLines, encounter } from './data.js';
 import { newMember, atk, defense, alive, healFull, bagAdd, bagTake, canEquip, statAt, agiOf } from './party.js';
 import { tile, person, wagon as wagonSprite, monster as monsterArt, LOOKS } from './art.js';
 import { buildMaps, TILE, WALK, PLACES, BARRIERS, worldZone, CHAPTERS, ENDING } from './maps.js';
@@ -153,7 +153,7 @@ async function shop(list) {
   for (;;) {
     const i = await ask(T('老闆：「歡迎光臨！要買什麼嗎？」', 'Shopkeeper: "Welcome! What can I do for you?"'), [T('買', 'Buy'), T('賣', 'Sell'), T('離開', 'Leave')]);
     if (i === 0) {
-      const ii = await menu(list.map((k) => ({ label: T(ITEMS[k].name), right: `${ITEMS[k].price}G` })), { x: 40, y: 8, title: `${S.gold} G`, info: (it) => { const k = list[list.indexOf(list.find((x) => T(ITEMS[x].name) === it.label))]; if (k && ITEMS[k].slot) equipInfo(k); } });
+      const ii = await menu(list.map((k) => ({ label: T(ITEMS[k].name), right: `${ITEMS[k].price}G` })), { x: 40, y: 8, title: `${S.gold} G`, info: (it, sel) => { const k = list[sel]; if (!k) return; if (ITEMS[k].slot) equipInfo(k); else itemInfo(k); } });
       if (ii < 0) continue;
       const k = list[ii], it = ITEMS[k];
       if (S.gold < it.price) { await say(T('金幣好像不夠呢。', 'You don\'t seem to have enough gold.')); continue; }
@@ -168,7 +168,7 @@ async function shop(list) {
     } else if (i === 1) {
       const items = Object.keys(S.bag).filter((k) => ITEMS[k] && !ITEMS[k].key && ITEMS[k].price);
       if (!items.length) { await say(T('沒有可以賣的東西。', 'You have nothing to sell.')); continue; }
-      const ii = await menu(items.map((k) => ({ label: `${T(ITEMS[k].name)} ×${S.bag[k]}`, right: `${sellPrice(k)}G` })), { x: 40, y: 8, title: `${S.gold} G` });
+      const ii = await menu(items.map((k) => ({ label: `${T(ITEMS[k].name)} ×${S.bag[k]}`, right: `${sellPrice(k)}G` })), { x: 40, y: 8, title: `${S.gold} G`, info: (it, sel) => itemInfo(items[sel]) });
       if (ii < 0) continue;
       const k = items[ii]; if (await ask(T(`${T(ITEMS[k].name)}的話，可以用 ${sellPrice(k)} 金幣收購。要賣嗎？`, `I'll give you ${sellPrice(k)} gold for the ${T(ITEMS[k].name)}. Sell it?`), [T('賣', 'Sell'), T('不賣', 'No')]) !== 0) continue;
       bagTake(S.bag, k); S.gold += sellPrice(k); sfx('ok');
@@ -184,17 +184,14 @@ function equipInfo(k) {
     text(can ? (da || dd ? `${da >= 0 ? '+' : ''}${da}/${dd >= 0 ? '+' : ''}${dd}` : '★') : '—', 240, y, { align: 'right', color: can ? (up ? '#7fff8a' : '#ccc') : '#777', size: 7 * SC });
     y += 14;
   }
-  itemNote(k);
+  itemInfo(k, { w: 138 });
 }
 // how attack / defence would change if m wore item k
 function gearDiff(m, k) { const it = ITEMS[k], t = { ...m, eq: { ...m.eq, [it.slot]: k } }; return [atk(t) - atk(m), defense(t) - defense(m)]; }
-// a line about a piece of gear: its slot, its bonuses and its special power
-function itemNote(k) {
-  const it = ITEMS[k], sl = SLOTS.find(([s]) => s === it.slot), parts = [T(sl[1], sl[2])];
-  if (it.atk) parts.push(T(`攻${it.atk}`, `ATK ${it.atk}`)); if (it.def) parts.push(T(`防${it.def}`, `DEF ${it.def}`));
-  if (it.bonus) for (const [s, v] of Object.entries(it.bonus)) parts.push(`${T({ str: '力', agi: '速', def: '防' }[s], s.toUpperCase())}+${v}`);
-  box(8, 204, 140, it.fx ? 30 : 20); text(parts.join(' '), 14, 209, { size: 7 * SC, color: '#ffe080' });
-  if (it.fx) text(T(...FX[it.fx]), 14, 220, { size: 7 * SC });
+// an item's description box: gear gets its stats and powers in yellow above what it is
+function itemInfo(k, opts) {
+  if (!k || !ITEMS[k]) return;
+  const ls = itemLines(k); UI.infoBox(ls.map((p, i) => [T(...p), i === 0 && ls.length > 1 ? '#ffe080' : '#fff']), opts);
 }
 const short = (it) => (it.slot === 'w' ? String(it.atk) : it.def ? String(it.def) : '★');
 function equip(m, k) { const it = ITEMS[k]; if (!bagTake(S.bag, k)) return; const old = m.eq[it.slot]; if (old) bagAdd(S.bag, old); m.eq[it.slot] = k; }
@@ -219,7 +216,7 @@ async function fieldMenu() {
 const pickMember = (title, list = members()) => menu(list.map((m) => ({ label: nameOf(m.id), right: `${m.hp}/${m.maxhp}` })), { x: 80, y: 8, title });
 async function itemMenu() {
   const keys = Object.keys(S.bag); if (!keys.length) return say(T('沒有任何道具。', 'You have no items.'));
-  const i = await menu(keys.map((k) => ({ label: T(ITEMS[k].name), right: `×${S.bag[k]}` })), { x: 60, y: 8, rows: 10 });
+  const i = await menu(keys.map((k) => ({ label: T(ITEMS[k].name), right: `×${S.bag[k]}` })), { x: 60, y: 8, rows: 9, info: (it, sel) => itemInfo(keys[sel]) });
   if (i < 0) return;
   const k = keys[i], it = ITEMS[k];
   if (it.slot) { const who = members().filter((m) => canEquip(it, m.id)); if (!who.length) return say(T('沒有人能裝備這個。', 'No one can equip that.')); const w = await pickMember(T('誰要裝備？', 'Who equips it?'), who); if (w >= 0) { equip(who[w], k); sfx('ok'); } return; }
@@ -259,7 +256,7 @@ async function equipMenu() {
     const si = await menu(slots.map(([k, l]) => ({ label: l, right: m.eq[k] ? T(ITEMS[m.eq[k]].name) : '—' })), { x: 8, y: 8, w: 240 });
     close(); if (si < 0) return;
     const slot = slots[si][0], opts = Object.keys(S.bag).filter((k) => ITEMS[k] && ITEMS[k].slot === slot && canEquip(ITEMS[k], m.id));
-    const ii = await menu([{ label: T('（卸下）', '(remove)') }, ...opts.map((k) => ({ label: T(ITEMS[k].name), right: short(ITEMS[k]), key: k }))], { x: 60, y: 30, info: (it) => { if (it && it.key) { const [da, dd] = gearDiff(m, it.key); box(150, 150, 98, 30); text(`${T('攻', 'ATK')} ${da >= 0 ? '+' : ''}${da}`, 157, 156, { size: 7 * SC, color: da > 0 ? '#7fff8a' : '#ccc' }); text(`${T('防', 'DEF')} ${dd >= 0 ? '+' : ''}${dd}`, 157, 168, { size: 7 * SC, color: dd > 0 ? '#7fff8a' : '#ccc' }); itemNote(it.key); } } });
+    const ii = await menu([{ label: T('（卸下）', '(remove)') }, ...opts.map((k) => ({ label: T(ITEMS[k].name), right: short(ITEMS[k]), key: k }))], { x: 60, y: 30, info: (it) => { if (it && it.key) { const [da, dd] = gearDiff(m, it.key); box(150, 150, 98, 30); text(`${T('攻', 'ATK')} ${da >= 0 ? '+' : ''}${da}`, 157, 156, { size: 7 * SC, color: da > 0 ? '#7fff8a' : '#ccc' }); text(`${T('防', 'DEF')} ${dd >= 0 ? '+' : ''}${dd}`, 157, 168, { size: 7 * SC, color: dd > 0 ? '#7fff8a' : '#ccc' }); itemInfo(it.key, { w: 138 }); } } });
     if (ii < 0) continue;
     if (ii === 0) { if (m.eq[slot]) { bagAdd(S.bag, m.eq[slot]); m.eq[slot] = null; } } else equip(m, opts[ii - 1]);
   }
