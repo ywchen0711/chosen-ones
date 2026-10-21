@@ -217,6 +217,15 @@ export function create(canvas) {
         case 'hills': hills.push([x + 0.3, y + 0.35, 0.8], [x + 0.72, y + 0.75, 0.6]); break;
         case 'rock': rocks.push([x + 0.5, y + 0.5, 1]); break;
         case 'door': if (isWall(at(x - 1, y)) || isWall(at(x + 1, y))) add(box(1, wallH * 0.28, 1, wallMats(isWall(at(x - 1, y)) ? at(x - 1, y) : at(x + 1, y)), wallH * 0.72), x, y); break;
+        // a stairwell cut into the wall behind: low walls either side, steps climbing to a dark archway (or the dark of the way down)
+        case 'stairsup': case 'stairsdown': {
+          const up = t === 'stairsup', back = at(x, y - 1), sides = wallMats(isWall(back) ? back : 'wall'), stone = col(up ? '#a89a82' : '#5e5448');
+          const step = [stone, stone, stone, stone, col('#4a3e34'), col('#4a3e34')];
+          if (up) for (let i = 0; i < 4; i++) add(box(0.74, 0.05 + i * 0.06, 0.25, step), x, y + 0.375 - i * 0.25);
+          for (const s of [-1, 1]) add(box(0.12, up ? 0.5 : 0.3, 1, sides), x + s * 0.44, y);
+          if (isWall(back)) { add(box(0.68, wallH * 0.8, 0.04, col('#07050a')), x, y - 0.48, false); add(box(0.84, 0.1, 0.08, stone, wallH * 0.8), x, y - 0.46, false); }
+          break;
+        }
         case 'counter': add(box(1, 0.5, 0.8, [col('#7a4a28'), col('#7a4a28'), col('#c89060'), col('#5a3a20'), col('#8a5a30'), col('#8a5a30')]), x, y); break;
         case 'table': { const m = add(box(0.86, 0.08, 0.7, col('#c89060'), 0.4), x, y); for (const [dx, dz] of [[-0.35, -0.28], [0.35, -0.28], [-0.35, 0.28], [0.35, 0.28]]) add(box(0.08, 0.4, 0.08, col('#5a3a20')), x + dx, y + dz); void m; break; }
         case 'bed': add(box(0.88, 0.3, 0.92, [col('#6a3a18'), col('#6a3a18'), keep(new THREE.MeshLambertMaterial({ map: tex(tile('bed', info.theme, 0)) })), col('#5a3a20'), col('#4a7ad8'), col('#6a3a18')]), x, y); add(box(0.88, 0.5, 0.08, col('#7a4a20')), x, y - 0.44); break;

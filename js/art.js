@@ -63,8 +63,20 @@ function tileCanvas(id, theme, frame) {
       case 'statue': under(); R(3, 12, 10, 4, '#8a8a8a'); R(6, 2, 4, 10, '#b0b0b0'); R(5, 1, 6, 4, '#c0c0c0'); R(4, 5, 8, 2, '#b0b0b0'); break;
       case 'grave': grass(); R(5, 4, 6, 9, '#9a9a9a'); R(6, 3, 4, 1, '#9a9a9a'); R(7, 6, 2, 4, '#6a6a6a'); R(6, 7, 4, 1, '#6a6a6a'); R(4, 13, 8, 1, '#5a5a5a'); break;
       case 'fence': grass(); R(0, 6, 16, 2, '#c89060'); R(0, 11, 16, 2, '#c89060'); for (let x = 1; x < 16; x += 5) R(x, 3, 2, 12, '#a8784a'); break;
-      case 'stairsdown': under(); for (let i = 0; i < 4; i++) R(2 + i, 2 + i * 3, 12 - i * 2, 3, shade('#555555', -i * 0.2)); R(6, 12, 4, 3, '#000'); break;
-      case 'stairsup': under(); for (let i = 0; i < 4; i++) R(2, 12 - i * 3, 12, 3, shade('#b0a890', i * 0.15)); R(2, 12, 12, 1, '#6a6050'); break;
+      // stairs sit against the north wall: steps between two side walls, climbing toward light or sinking into the dark
+      case 'stairsdown': case 'stairsup': {
+        const up = id === 'stairsup', stone = theme === 'town' ? '#a8946a' : th.floor;
+        R(0, 0, 16, 16, up ? shade(stone, 0.3) : '#0c0810');
+        for (let i = 0; i < 5; i++) {
+          const y = 13 - i * 3, face = up ? shade(stone, i * 0.06) : shade(stone, -i * 0.17);
+          R(2, y, 12, 2, face); R(2, y + 2, 12, 1, shade(face, -0.4)); R(2, y, 12, 1, shade(face, up ? 0.12 : 0.06));
+        }
+        if (!up) { R(2, 0, 12, 3, '#0c0810'); R(2, 3, 12, 1, 'rgba(12,8,16,0.6)'); }
+        const side = th.wall || '#7a6048', side2 = th.wall2 || '#5a4430';
+        R(0, 0, 2, 16, side); R(14, 0, 2, 16, side); R(2, 0, 1, 16, side2); R(13, 0, 1, 16, side2);
+        R(0, 15, 2, 1, side2); R(14, 15, 2, 1, side2);
+        break;
+      }
       case 'lava': R(0, 0, 16, 16, '#c83a10'); R(frame ? 2 : 7, 4, 5, 2, '#ffb030'); R(frame ? 9 : 3, 11, 5, 2, '#ff7a20'); break;
       case 'altar': under(); R(2, 6, 12, 8, '#e8e8f0'); R(2, 6, 12, 2, '#ffffff'); R(6, 1, 4, 5, '#ffd040'); R(7, 0, 2, 2, '#fff8c0'); break;
       // world-map places

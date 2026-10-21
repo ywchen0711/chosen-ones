@@ -130,8 +130,11 @@ function dungeon(id, seed, theme, floors, o) {
   const out = {};
   for (let f = 1; f <= floors; f++) {
     const d = makeDungeon(seed + f * 101, theme, o.size), mid = d.mid;
+    // stairs go in a room's top row with solid wall behind them (as close to the middle as possible)
+    const nook = (r) => { const xs = []; for (let x = r.x; x < r.x + r.w; x++) if (d.t[r.y - 1][x] === '#') xs.push(x); xs.sort((a, b) => Math.abs(a - r.cx) - Math.abs(b - r.cx)); return xs.length ? [xs[0], r.y] : [r.cx, r.cy]; };
+    [d.start.cx, d.start.cy] = nook(d.start);
     d.t[d.start.cy][d.start.cx] = '<';
-    if (f < floors) d.t[d.end.cy][d.end.cx] = '>';
+    if (f < floors) { [d.end.cx, d.end.cy] = nook(d.end); d.t[d.end.cy][d.end.cx] = '>'; }
     const fo = (o.floors && o.floors[f]) || {};
     const chests = (fo.chests || []).map((c, i) => { const r = mid[i % mid.length], x = r.x + (i % 2 ? r.w - 1 : 0), y = r.y + (i >= 2 ? r.h - 1 : 0); return { x, y, ...c, id: `${id}_${f}_${i}` }; });
     const anchor = { start: [d.start.cx, d.start.cy], end: [d.end.cx, d.end.cy], mid: mid.map((r) => [r.cx, r.cy]) };
