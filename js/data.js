@@ -174,7 +174,7 @@ export const SLOTS = [['w', '武器', 'Weapon'], ['a', '鎧甲', 'Armour'], ['s'
 export const FX = {
   regen: ['每回合回復 HP', 'Regains HP each round'], mpregen: ['每回合回復 MP', 'Regains MP each round'], crit: ['容易打出會心一擊', 'More excellent hits'],
   nopoison: ['不會中毒', 'Immune to poison'], nosleep: ['不會睡著', 'Immune to sleep'], gold: ['戰鬥金幣 +25%', 'Battle gold +25%'],
-  xp: ['經驗值 +15%', 'Experience +15%'], luck: ['寶物掉落率加倍', 'Monsters drop items twice as often'],
+  xp: ['經驗值 +15%', 'Experience +15%'], luck: ['掉寶率提升（每人可疊加）', 'More treasure drops (stacks per wearer)'],
 };
 // what each item is, for the menus and shops
 const DESC = {
@@ -277,7 +277,7 @@ const DESC = {
   charm: ['保佑平安的護身符。', 'A lucky charm to keep you safe.'],
   antidotal: ['戴上後不會中毒的項鍊。', 'A pendant that keeps poison away.'],
   goldneck: ['黃金項鍊，戰鬥獲得的金幣增加。', 'A gold necklace: more gold from battles.'],
-  luckbell: ['叮噹作響的鈴鐺，魔物更容易掉落寶物。', 'A jingling bell: monsters drop treasure more often.'],
+  luckbell: ['叮噹作響的鈴鐺。每多一人戴（含馬車），掉寶率就多加一倍。', 'A jingling bell. Each wearer, wagon included, adds the base drop chance again.'],
   guardneck: ['有守護之力的項鍊，防禦力很高。', 'A pendant with a guardian\'s power. Strong defence.'],
   starpendant: ['星星形狀的墜飾，同時提升力量和速度。', 'A star-shaped pendant that raises strength and speed.'],
 };

@@ -419,8 +419,8 @@ export async function battle(G, spec, opts = {}) {
     const fighters = liveParty(G), share = Math.max(1, Math.floor(xp / Math.max(1, fighters.length)));
     if (xp) await say(T(`每個人獲得了 ${share} 點經驗值。`, `Each member earns ${share} experience.`));
     if (gold) { G.addGold(gold); await say(T(`得到了 ${gold} 枚金幣。`, `Found ${gold} gold.`)); }
-    // treasure: each monster's drop table (a Lucky Bell doubles the chances)
-    const luck = G.active().some((p) => hasFx(p, 'luck')) ? 2 : 1;
+    // treasure: each monster's drop table; every member wearing luck (front row or wagon) adds the base chance again
+    const luck = 1 + (G.party ? G.party() : G.active()).filter((p) => hasFx(p, 'luck')).length;
     for (const m of beaten) for (const [it, n] of m.d.drops || (m.d.drop ? [m.d.drop] : [])) if (Math.random() < Math.min(1, luck / n)) {
       G.give(it); G.sfx('item'); await say(T(`${m.label}留下了${T(ITEMS[it].name)}！`, `${m.label} dropped a ${T(ITEMS[it].name)}!`));
     }

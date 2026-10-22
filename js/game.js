@@ -107,7 +107,7 @@ async function runScript(fn) {
 
 // ---------------------------------------------------------------- what battles need from the game
 const G = {
-  get hd() { return hdOn(); }, nameOf: (id) => nameOf(id),
+  get hd() { return hdOn(); }, nameOf: (id) => nameOf(id), party: () => members(),
   active: () => S.active.map((id) => S.members[id]), wagonAlive: () => S.wagon.map((id) => S.members[id]).filter(alive),
   get bag() { return S.bag; }, ch: () => S.ch, tactic: () => S.tactic || 'normal',
   isAuto: (m) => S.ch === 5 && m.id !== 'hero' && (S.tactic || 'normal') !== 'manual',
