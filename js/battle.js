@@ -9,7 +9,9 @@ import * as UI from './ui.js';
 const rand = (a, b) => a + Math.random() * (b - a);
 const ri = (a, b) => Math.floor(rand(a, b + 1));
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
-const nm = (x) => (x.mon ? x.label : T(CHARS[x.id].name));
+// a party member's name: the hero has the name the player chose (game.js hands it over as G.nameOf)
+let nameOf = (id) => T(CHARS[id].name);
+const nm = (x) => (x.mon ? x.label : nameOf(x.id));
 const msg = (s) => say(s, { auto: 0.55, fast: true });
 
 function mkMon(id) {
@@ -321,6 +323,7 @@ async function monsterAct(G, B, mo) {
 // ---------------------------------------------------------------- one battle
 // spec: [[monster, count], ...]; resolves to 'win', 'lose' or 'flee'
 export async function battle(G, spec, opts = {}) {
+  if (G.nameOf) nameOf = G.nameOf;
   const mons = []; for (const [id, n] of spec) for (let i = 0; i < n; i++) mons.push(mkMon(id));
   label(mons);
   const B = { mons, bg: opts.bg || 'field', shake: 0, pops: [], time: 0, turn: null, boss: mons.some((m) => m.d.boss) };
