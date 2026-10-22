@@ -297,6 +297,7 @@ export function itemLines(k) {
   return out;
 }
 export const GOLD_RATE = 1.5;          // battle gold (50% more than the monster table says)
+export const XP_RATE = 100;            // battle experience (the monster table times this)
 export const canEquip = (it, cid) => it.who === '*' || it.who.split(' ').includes(cid);
 
 // ---------------------------------------------------------------- monsters

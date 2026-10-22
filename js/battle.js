@@ -1,6 +1,6 @@
 // Battles in the classic first-person style: monsters in front, the party's status above, messages below.
 import { T, EN } from './i18n.js';
-import { MONSTERS, SPELLS, ITEMS, CHARS, GOLD_RATE, canRecruit, itemLines } from './data.js';
+import { MONSTERS, SPELLS, ITEMS, CHARS, GOLD_RATE, XP_RATE, canRecruit, itemLines } from './data.js';
 import { atk, defense, alive, gainXp, bagTake, agiOf, hasFx } from './party.js';
 import { monster as monsterArt, backdrop } from './art.js';
 import { box, text, say, menu, S as SC, VW } from './ui.js';
@@ -413,7 +413,7 @@ export async function battle(G, spec, opts = {}) {
   if (result === 'win') {
     G.music('win');
     const beaten = B.mons.filter((m) => !m.fled);
-    const xp = beaten.reduce((s, m) => s + m.d.xp, 0), gold = Math.round(beaten.reduce((s, m) => s + m.d.gold, 0) * GOLD_RATE * (G.active().some((p) => p.id === 'tolle') ? 1.25 : 1) * (G.active().some((p) => hasFx(p, 'gold')) ? 1.25 : 1));
+    const xp = beaten.reduce((s, m) => s + m.d.xp, 0) * XP_RATE, gold = Math.round(beaten.reduce((s, m) => s + m.d.gold, 0) * GOLD_RATE * (G.active().some((p) => p.id === 'tolle') ? 1.25 : 1) * (G.active().some((p) => hasFx(p, 'gold')) ? 1.25 : 1));
     if (opts.victory) await say(opts.victory);
     else await say(T(`打倒了所有的怪物！`, 'All the monsters are defeated!'), { auto: 0.8 });
     const fighters = liveParty(G), share = Math.max(1, Math.floor(xp / Math.max(1, fighters.length)));

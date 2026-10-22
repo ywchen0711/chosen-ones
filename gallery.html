@@ -67,10 +67,10 @@
 </header>
 <main><p class="note" id="note"></p><div class="grid" id="grid"></div></main>
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-  "./js/battle.js": "./js/battle.js?v=24", "./js/data.js": "./js/data.js?v=24", "./js/party.js": "./js/party.js?v=24", "./js/art.js": "./js/art.js?v=24", "./js/maps.js": "./js/maps.js?v=24", "./js/audio.js": "./js/audio.js?v=24", "./js/ui.js": "./js/ui.js?v=24", "./js/i18n.js": "./js/i18n.js?v=24" } }</script>
+  "./js/battle.js": "./js/battle.js?v=25", "./js/data.js": "./js/data.js?v=25", "./js/party.js": "./js/party.js?v=25", "./js/art.js": "./js/art.js?v=25", "./js/maps.js": "./js/maps.js?v=25", "./js/audio.js": "./js/audio.js?v=25", "./js/ui.js": "./js/ui.js?v=25", "./js/i18n.js": "./js/i18n.js?v=25" } }</script>
 <script type="module">
 import { T, EN, LANG } from './js/i18n.js';
-import { MONSTERS, ITEMS, ZONES, SPELLS, CHARS, SLOTS, FX, SIGDESC, MAT, GOLD_RATE, canRecruit, itemLines } from './js/data.js';
+import { MONSTERS, ITEMS, ZONES, SPELLS, CHARS, SLOTS, FX, SIGDESC, MAT, GOLD_RATE, XP_RATE, canRecruit, itemLines } from './js/data.js';
 import { SHOPS } from './js/maps.js';
 import { monster as monsterArt } from './js/art.js';
 
@@ -149,7 +149,7 @@ function monsterCard(id) {
         <div class="tags">${m.boss ? `<span class="tag boss">${T('頭目', 'Boss')}</span>` : ''}${m.metal ? `<span class="tag metal">${T('金屬', 'Metal')}</span>` : ''}${join ? `<span class="tag join">${T(`可收編・Lv ${m.lv} 加入`, `Can join · Lv ${m.lv}`)}</span>` : ''}</div></div></div>
     <p class="desc">${esc(desc)}</p>
     <div class="stats"><div><span>HP</span>${m.hp}</div><div><span>${T('攻擊', 'ATK')}</span>${m.atk}</div><div><span>${T('防禦', 'DEF')}</span>${m.def}</div>
-      <div><span>${T('速度', 'AGI')}</span>${m.agi}</div><div><span>${T('經驗', 'EXP')}</span>${m.xp}</div><div><span>${T('金幣', 'Gold')}</span>${Math.round(m.gold * GOLD_RATE)}</div></div>
+      <div><span>${T('速度', 'AGI')}</span>${m.agi}</div><div><span>${T('經驗', 'EXP')}</span>${m.xp * XP_RATE}</div><div><span>${T('金幣', 'Gold')}</span>${Math.round(m.gold * GOLD_RATE)}</div></div>
     <h4>${T('行動', 'IN BATTLE')}</h4><ul>${m.acts.map(([a, w]) => `<li>${esc(actLine(m, a))} <span class="pct">${pct(w / tot)}</span></li>`).join('')}</ul>
     <h4>${T('出沒地點', 'FOUND IN')}</h4><div class="chips">${where.map((w) => `<span class="tag">${esc(w)}</span>`).join('') || `<span class="sub">—</span>`}</div>
     <h4>${T('掉落物', 'DROPS')}</h4>${drops ? `<ul>${drops}</ul>` : `<span class="sub">${T('不會掉落寶物', 'Drops nothing')}</span>`}
