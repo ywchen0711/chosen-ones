@@ -506,7 +506,7 @@ function titleMenu() {
   mode = 'title'; scene = null; UI.stack.length = 0; music('title');
   const has = !!load();
   (async () => {
-    const opts = [...(has ? [T('繼續冒險', 'Continue')] : []), T('新的冒險', 'New Adventure'), EN ? '中文' : 'English', T('音樂：', 'Music: ') + (isMuted() ? T('關', 'off') : T('開', 'on')), ...(HDR ? [hdLabel()] : [])];
+    const opts = [...(has ? [T('繼續冒險', 'Continue')] : []), T('新的冒險', 'New Adventure'), EN ? '中文' : 'English', T('音樂：', 'Music: ') + (isMuted() ? T('關', 'off') : T('開', 'on')), ...(HDR ? [hdLabel()] : []), T('圖鑑', 'Gallery')];
     const i = await menu(opts, { x: 80, y: 146, cancel: false });
     const k = has ? i : i + 1;
     if (k === 0) { S = load(); if (!S.map || !MAPS[S.map]) { mode = 'card'; cardT = 0; cardCh = S.ch; return; } mode = 'field'; enterMap(S.map, S.x, S.y, S.dir || 'down'); return; }
@@ -518,6 +518,7 @@ function titleMenu() {
       return startChapter(1);
     }
     if (k === 2) return setLang(EN ? 'zh' : 'en');
+    if (k === (HDR ? 5 : 4)) { location.href = `gallery.html?lang=${LANG}`; return; }
     if (k === 4) { setHD(!hdPref); return titleMenu(); }
     toggleMute(); titleMenu();
   })();

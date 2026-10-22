@@ -176,6 +176,13 @@ const EQUIP = {
     'strring', 'agiring', 'antidotal', 'goldneck', 'luckbell'],
 };
 const ITEMS5 = ['herb', 'antidote', 'wing', 'holywater'];
+// every shop's stock, for the gallery: { town, ch, gear, items } (a town whose stock changes in chapter 5 is listed twice)
+const SHOP_TOWN = { thistle: [['薊村', 'Thistle'], 1, ITEMS1], spring: [['泉之鎮', 'Springvale'], 2, ITEMS1], arena: [['競技之都', 'Arena City'], 2, ITEMS1],
+  lake: [['湖畔鎮', 'Lakeside'], 3, ITEMS1], oasis: [['綠洲鎮', 'Oasis'], 4, []], cross: [['十字路鎮', 'Crossroads'], 5, ITEMS5] };
+export const SHOPS = Object.entries(SHOP_TOWN).flatMap(([k, [town, ch, items]]) => {
+  const early = EQUIP[k]({ ch: () => ch }), late = EQUIP[k]({ ch: () => 5 });
+  return [{ town, ch, gear: early, items }, ...(ch < 5 && late.join() !== early.join() ? [{ town, ch: 5, gear: late, items: [] }] : [])];
+});
 
 // ---------------------------------------------------------------- everything
 export function buildMaps() {

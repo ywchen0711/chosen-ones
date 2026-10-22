@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>天命之路 圖鑑 · Chosen Ones Gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #0e0d1a; --panel: #17152a; --line: #2e2a4a; --ink: #ece8f6; --dim: #a39cbd; --gold: #ffe080; --green: #7fff8a; --red: #ff8a8a; --blue: #8ac8ff; --chip: #221f3a; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+  a { color: var(--blue); }
+  .pixel { font-family: "DotGothic16", "Noto Sans TC", monospace; }
+  header { position: sticky; top: 0; z-index: 5; background: rgba(14, 13, 26, 0.96); border-bottom: 2px solid var(--line); padding: 10px 16px; }
+  .bar { max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+  h1 { margin: 0; font-size: 22px; color: var(--gold); font-weight: 400; letter-spacing: 0.04em; }
+  .links { margin-left: auto; display: flex; gap: 14px; font-size: 14px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tabs button { font: inherit; font-family: "DotGothic16", sans-serif; background: var(--panel); color: var(--dim); border: 2px solid var(--line); border-radius: 8px; padding: 4px 14px; cursor: pointer; }
+  .tabs button[aria-selected="true"] { color: var(--gold); border-color: var(--gold); }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; width: 100%; }
+  .tools input, .tools select { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; min-width: 0; }
+  .tools input { flex: 1 1 200px; }
+  .tools select { flex: 0 1 auto; max-width: 100%; }
+  .tools > * { min-width: 0; }
+  details summary { cursor: pointer; color: var(--dim); font-size: 13px; margin-top: 4px; }
+  details .chips { margin-top: 4px; }
+  .count { color: var(--dim); font-size: 13px; font-variant-numeric: tabular-nums; }
+  main { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  .note { color: var(--dim); font-size: 13px; margin: 0 0 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+  .card { background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 12px 14px; content-visibility: auto; contain-intrinsic-size: 340px 360px; min-width: 0; }
+  .card.flash { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(255, 224, 128, 0.25); }
+  .top { display: flex; gap: 12px; align-items: flex-start; }
+  .top canvas { width: 96px; height: 96px; flex: none; image-rendering: auto; background: radial-gradient(circle at 50% 70%, #2a2650, #17152a 70%); border-radius: 8px; }
+  .name { min-width: 0; }
+  h3 { margin: 0; font-family: "DotGothic16", sans-serif; font-weight: 400; font-size: 19px; color: var(--gold); line-height: 1.3; }
+  .en { color: var(--dim); font-size: 13px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .tag { font-size: 12px; padding: 0 7px; border-radius: 999px; background: var(--chip); color: var(--dim); border: 1px solid var(--line); white-space: nowrap; }
+  .tag.boss { color: #ffb0b0; border-color: #6a2a3a; } .tag.join { color: var(--green); border-color: #2a5a3a; } .tag.slot { color: var(--gold); border-color: #5a4a2a; } .tag.metal { color: #e0e8ff; }
+  .desc { margin: 8px 0 6px; color: var(--ink); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 10px; margin: 6px 0; font-variant-numeric: tabular-nums; font-size: 14px; }
+  .stats span { color: var(--dim); margin-right: 6px; }
+  h4 { margin: 10px 0 3px; font-size: 13px; color: var(--gold); font-weight: 700; letter-spacing: 0.06em; }
+  ul { margin: 0; padding-left: 18px; }
+  li { margin: 1px 0; }
+  .pct { color: var(--green); font-variant-numeric: tabular-nums; }
+  .sub { color: var(--dim); font-size: 13px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .go { font: inherit; font-size: 13px; background: var(--chip); color: var(--blue); border: 1px solid var(--line); border-radius: 6px; padding: 0 7px; cursor: pointer; }
+  .go:hover { border-color: var(--blue); }
+  .empty { color: var(--dim); text-align: center; padding: 40px 0; }
+  @media (max-width: 520px) { h1 { font-size: 19px; } .stats { grid-template-columns: repeat(2, 1fr); } .links { margin-left: 0; } .tabs button { padding: 3px 10px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1 class="pixel" id="title">天命之路 圖鑑</h1>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="links"><a id="lang" href="#"></a><a id="back" href="index.html"></a></div>
+    <div class="tools"><input id="q" type="search"><select id="filter"></select><span class="count" id="count"></span></div>
+  </div>
+</header>
+<main><p class="note" id="note"></p><div class="grid" id="grid"></div></main>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "./js/battle.js": "./js/battle.js?v=23", "./js/data.js": "./js/data.js?v=23", "./js/party.js": "./js/party.js?v=23", "./js/art.js": "./js/art.js?v=23", "./js/maps.js": "./js/maps.js?v=23", "./js/audio.js": "./js/audio.js?v=23", "./js/ui.js": "./js/ui.js?v=23", "./js/i18n.js": "./js/i18n.js?v=23" } }</script>
+<script type="module">
+import { T, EN, LANG } from './js/i18n.js';
+import { MONSTERS, ITEMS, ZONES, SPELLS, CHARS, SLOTS, FX, SIGDESC, MAT, GOLD_RATE, canRecruit, itemLines } from './js/data.js';
+import { SHOPS } from './js/maps.js';
+import { monster as monsterArt } from './js/art.js';
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pct = (p) => (p >= 1 ? '100%' : `${(p * 100).toFixed(p < 0.1 ? 1 : 0)}%`);
+
+// ---- where things live
+const ZN = { n1: ['北方原野', 'Northern Plains', 1], cave1: ['幽暗洞窟', 'Gloom Cave', 1], e2: ['東方原野', 'Eastern Plains', 2], cave2: ['西爾峰洞窟', 'Windpeak Cave', 2],
+  w3: ['西方湖區', 'Western Lakes', 3], mine: ['舊礦坑', 'Old Mine', 3], s4: ['南方沙漠', 'Southern Desert', 4], tower: ['鍊金之塔', 'Alchemist\'s Tower', 4],
+  c5a: ['中央平原', 'Central Plains', 5], c5b: ['外圍荒野', 'Outer Wilds', 5], shrine: ['天空神殿', 'Sky Shrine', 5], dark: ['魔王城', 'Dark Castle', 5] };
+const ZORDER = Object.keys(ZN);
+const BOSS_AT = { shade: ['幽暗洞窟最深處', 'Depths of Gloom Cave', 1], gladiator: ['競技之都・武術大會', 'Arena City tournament', 2], vulture: ['競技之都・武術大會', 'Arena City tournament', 2],
+  ironclaw: ['競技之都・武術大會', 'Arena City tournament', 2], minegolem: ['舊礦坑最深處', 'Depths of the Old Mine', 3], barga: ['鍊金之塔頂', 'Top of the Alchemist\'s Tower', 4],
+  guardian: ['天空神殿', 'Sky Shrine', 5], solzar: ['魔王城', 'Dark Castle', 5], solzar2: ['魔王城', 'Dark Castle', 5] };
+const zonesOf = {};
+for (const [z, groups] of Object.entries(ZONES)) for (const g of groups) for (const [id] of g) (zonesOf[id] = zonesOf[id] || new Set()).add(z);
+for (const [id, m] of Object.entries(MONSTERS)) if (m.zone) (zonesOf[id] = zonesOf[id] || new Set()).add(m.zone);
+const firstZone = (id) => { const zs = [...(zonesOf[id] || [])]; return zs.length ? Math.min(...zs.map((z) => ZORDER.indexOf(z))) : (BOSS_AT[id] ? [0, 1, 3, 5, 7, 11][BOSS_AT[id][2]] + 0.5 : 99); };
+
+// ---- words about monsters
+const FAMDESC = { slime: ['果凍般的身體彈來彈去，到處都看得到的魔物。', 'Bouncy jelly bodies; found just about everywhere.'],
+  bat: ['在洞窟與夜空中飛舞，喜歡吸血。', 'Flits through caves and night skies, fond of blood.'], rabbit: ['頭上長角的兔子，衝撞起來很痛。', 'Rabbits with a horn; their charge hurts.'],
+  shroom: ['會走路的蘑菇，會散布讓人昏睡的孢子。', 'Walking mushrooms that scatter drowsy spores.'], ghost: ['徘徊不去的靈魂，會吸取生命力。', 'Restless spirits that drain the life from you.'],
+  skeleton: ['被黑暗魔力驅動的骸骨士兵。', 'Bones of soldiers moved by dark magic.'], imp: ['調皮的小惡魔，帶著小刀和火焰魔法。', 'Mischievous little devils with knives and fire.'],
+  wolf: ['成群獵食的野狼，嚎叫之後會變得更兇猛。', 'Wolves that hunt in packs and grow fiercer after a howl.'], bird: ['巨大的怪鳥，翅膀一拍就颳起旋風。', 'Great birds whose wingbeats raise a gale.'],
+  mage: ['研究黑暗魔法的術士。', 'Sorcerers who study dark magic.'], plant: ['會動的魔花，花粉能讓人頭昏眼花。', 'Living fiendish flowers; their pollen makes heads spin.'],
+  knight: ['身披鎧甲的魔物騎士，防禦力很高。', 'Armoured monster knights, hard to hurt.'], snake: ['會盤繞獵物的大蛇。', 'Great serpents that coil round their prey.'],
+  beast: ['力大無窮的魔獸，一掃就能打中全隊。', 'Mighty beasts whose sweep hits the whole party.'], scorpion: ['尾針帶著麻痺毒的蠍子。', 'Scorpions with numbing venom in their sting.'],
+  golem: ['石頭或金屬做成的巨像，動作慢但非常堅硬。', 'Giants of stone or metal: slow, and very hard.'], dragon: ['最強大的魔物之一，會噴出火焰。', 'Among the mightiest of monsters. They breathe fire.'],
+  lord: ['統治魔物的暗帝。', 'The dark emperor who rules the monsters.'], demon: ['暗帝捨棄人形後的真正姿態。', 'The dark emperor\'s true shape, cast free of its human form.'] };
+const OWNDESC = { shade: ['盤踞在幽暗洞窟深處的影之魔物，第一章的頭目。', 'A shadow fiend lurking deep in Gloom Cave. Chapter 1\'s boss.'],
+  gladiator: ['武術大會的第一位對手，擅長連續攻擊。', 'The first opponent of the tournament, fond of double strikes.'],
+  vulture: ['武術大會的對手，會使用火焰魔法，也會替自己治療。', 'A tournament opponent who casts fire and heals itself.'],
+  ironclaw: ['武術大會的最後對手。', 'The last opponent of the tournament.'], minegolem: ['守護舊礦坑最深處的巨像，第三章的頭目。', 'The giant guarding the depths of the Old Mine. Chapter 3\'s boss.'],
+  barga: ['在鍊金之塔研究進化秘法的鍊金師，第四章的頭目。', 'The alchemist studying evolution in his tower. Chapter 4\'s boss.'],
+  guardian: ['守護天空神殿的巨龍。', 'The great dragon guarding the Sky Shrine.'], metal: ['渾身金屬的史萊姆。幾乎打不動、很快就會逃走，但經驗值極高。', 'A slime made of metal: almost impossible to hurt, quick to flee, and worth a fortune in experience.'] };
+const ACT = { attack: ['普通攻擊', 'Attack'], double: ['連續攻擊兩次', 'Attacks twice'], poison: ['毒攻擊（可能中毒）', 'Poison bite (may poison)'],
+  sleep: ['睡眠：可能讓一人睡著', 'Snooze: may put one to sleep'], roar: ['咆哮：可能嚇得全隊動彈不得', 'Roar: may freeze the whole party'],
+  breath: ['火焰吐息：打全隊', 'Fire breath: hits everyone'], quake: ['地震：打全隊', 'Quake: hits everyone'], flee: ['逃跑', 'Runs away'],
+  heal: ['治療：替受傷的同伴回復 HP', 'Heal: mends a hurt ally'], darkfire: ['暗黑火焰：打全隊', 'Dark flame: hits everyone'] };
+const actLine = (m, a) => {
+  if (a.startsWith('call:')) return T(`呼叫同伴（${T(MONSTERS[a.slice(5)].name)}）`, `Calls for help (${T(MONSTERS[a.slice(5)].name)})`);
+  if (m.sig && a === m.sigAct) return `${T(...m.sig)}${T('：', ': ')}${T(...SIGDESC[a])}`;
+  if (ACT[a]) return T(...ACT[a]);
+  if (SPELLS[a]) return T(`${T(SPELLS[a].name)}（魔法）`, `${T(SPELLS[a].name)} (spell)`);
+  return a;
+};
+
+// ---- who drops what, who sells what
+const dropsOf = {};
+for (const [id, m] of Object.entries(MONSTERS)) for (const [it, n] of m.drops || []) (dropsOf[it] = dropsOf[it] || []).push([id, n]);
+const soldAt = {};
+for (const s of SHOPS) for (const k of [...s.gear, ...s.items]) (soldAt[k] = soldAt[k] || []).push(s);
+const MATS = new Set(Object.values(MAT).map(([k]) => k));
+const go = (kind, id, label) => `<button class="go" data-go="${kind}:${id}">${esc(label)}</button>`;
+const shopsHtml = (k) => (soldAt[k] || []).map((s) => `<span class="tag">${esc(T(...s.town))}${T(`（第${s.ch}章）`, ` (Ch. ${s.ch})`)}</span>`).join('');
+const dropHtml = (k) => {
+  const all = (dropsOf[k] || []).sort((a, b) => a[1] - b[1]).map(([id, n]) => go('m', id, `${T(MONSTERS[id].name)} ${pct(1 / n)}`));
+  if (all.length <= 12) return all.join('');
+  return `${all.slice(0, 12).join('')}<details><summary>${T(`還有 ${all.length - 12} 隻……`, `${all.length - 12} more…`)}</summary><div class="chips">${all.slice(12).join('')}</div></details>`;
+};
+const whoHtml = (it) => (it.who === '*' ? `<span class="tag">${T('全員', 'Everyone')}</span>` : it.who.split(' ').map((c) => `<span class="tag">${esc(c === 'hero' ? T('勇者', 'Hero') : T(CHARS[c].name))}</span>`).join(''));
+
+// ---- cards
+function monsterCard(id) {
+  const m = MONSTERS[id], tot = m.acts.reduce((s, [, w]) => s + w, 0);
+  const where = BOSS_AT[id] ? [T(BOSS_AT[id][0], BOSS_AT[id][1])] : [...(zonesOf[id] || [])].sort((a, b) => ZORDER.indexOf(a) - ZORDER.indexOf(b)).map((z) => `${T(ZN[z][0], ZN[z][1])}${T(`（第${ZN[z][2]}章）`, ` (Ch. ${ZN[z][2]})`)}`);
+  const kin = m.base ? T(`${T(MONSTERS[m.base].name)}的同類變種，偶爾混在${T(MONSTERS[m.base].name)}的隊伍裡出現。`, `A kind of ${T(MONSTERS[m.base].name)}; it sometimes turns up in their groups.`) : '';
+  const desc = T(...(OWNDESC[id] || FAMDESC[m.art] || ['', ''])) + (kin ? ' ' + kin : '');
+  const drops = (m.drops || []).map(([it, n]) => `<li>${go(ITEMS[it].slot ? 'g' : 'i', it, T(ITEMS[it].name))} <span class="pct">${pct(1 / n)}</span> <span class="sub">${n > 1 ? T(`（戴幸運鈴鐺 ${pct(2 / n)}）`, ` (Lucky Bell: ${pct(2 / n)})`) : T('（必定掉落）', ' (always)')}</span></li>`).join('');
+  const join = canRecruit(id);
+  return `<article class="card" id="m-${id}">
+    <div class="top"><canvas width="96" height="96" data-art="${id}"></canvas>
+      <div class="name"><h3>${esc(T(m.name))}</h3><div class="en">${esc(EN ? m.name[0] : m.name[1])}</div>
+        <div class="tags">${m.boss ? `<span class="tag boss">${T('頭目', 'Boss')}</span>` : ''}${m.metal ? `<span class="tag metal">${T('金屬', 'Metal')}</span>` : ''}${join ? `<span class="tag join">${T(`可收編・Lv ${m.lv} 加入`, `Can join · Lv ${m.lv}`)}</span>` : ''}</div></div></div>
+    <p class="desc">${esc(desc)}</p>
+    <div class="stats"><div><span>HP</span>${m.hp}</div><div><span>${T('攻擊', 'ATK')}</span>${m.atk}</div><div><span>${T('防禦', 'DEF')}</span>${m.def}</div>
+      <div><span>${T('速度', 'AGI')}</span>${m.agi}</div><div><span>${T('經驗', 'EXP')}</span>${m.xp}</div><div><span>${T('金幣', 'Gold')}</span>${Math.round(m.gold * GOLD_RATE)}</div></div>
+    <h4>${T('行動', 'IN BATTLE')}</h4><ul>${m.acts.map(([a, w]) => `<li>${esc(actLine(m, a))} <span class="pct">${pct(w / tot)}</span></li>`).join('')}</ul>
+    <h4>${T('出沒地點', 'FOUND IN')}</h4><div class="chips">${where.map((w) => `<span class="tag">${esc(w)}</span>`).join('') || `<span class="sub">—</span>`}</div>
+    <h4>${T('掉落物', 'DROPS')}</h4>${drops ? `<ul>${drops}</ul>` : `<span class="sub">${T('不會掉落寶物', 'Drops nothing')}</span>`}
+  </article>`;
+}
+function itemCard(k) {
+  const it = ITEMS[k], lines = itemLines(k), gear = !!it.slot;
+  const kind = gear ? T(...SLOTS.find(([s]) => s === it.slot).slice(1)) : it.key ? T('重要道具', 'Key item') : MATS.has(k) ? T('魔物素材', 'Monster material') : it.gem ? T('寶物', 'Treasure') : T('消耗品', 'Consumable');
+  const stats = gear ? lines[0] : null, desc = lines[lines.length - 1];
+  const price = it.price ? `${T('價格', 'Price')} ${it.price} G・${T('賣出', 'Sells for')} ${Math.floor(it.price / 2)} G` : it.key ? T('不能買賣', 'Cannot be bought or sold') : T('非賣品', 'Not sold');
+  return `<article class="card" id="${gear ? 'g' : 'i'}-${k}">
+    <div class="name"><h3>${esc(T(it.name))}</h3><div class="en">${esc(EN ? it.name[0] : it.name[1])}</div><div class="tags"><span class="tag slot">${esc(kind)}</span>${it.tier ? `<span class="tag">${T(`第 ${it.tier} 階`, `Tier ${it.tier}`)}</span>` : ''}</div></div>
+    <p class="desc">${esc(T(...desc))}</p>
+    ${stats ? `<div class="pct">${esc(T(...stats))}</div>` : ''}
+    ${gear ? `<h4>${T('可以裝備的人', 'WHO CAN USE IT')}</h4><div class="chips">${whoHtml(it)}</div>` : ''}
+    <h4>${T('價格', 'PRICE')}</h4><div class="sub">${price}</div>
+    <h4>${T('在哪裡買', 'SOLD IN')}</h4><div class="chips">${shopsHtml(k) || `<span class="sub">${T('商店沒有賣', 'No shop sells it')}</span>`}</div>
+    <h4>${T('哪些魔物會掉', 'DROPPED BY')}</h4><div class="chips">${dropHtml(k) || `<span class="sub">—</span>`}</div>
+  </article>`;
+}
+
+// ---- tabs, filters
+const ORDER = Object.keys(MONSTERS), monIds = [...ORDER].sort((a, b) => firstZone(a) - firstZone(b) || (MONSTERS[a].base ? 1 : 0) - (MONSTERS[b].base ? 1 : 0) || ORDER.indexOf(a) - ORDER.indexOf(b));
+const gearIds = Object.keys(ITEMS).filter((k) => ITEMS[k].slot).sort((a, b) => SLOTS.findIndex(([s]) => s === ITEMS[a].slot) - SLOTS.findIndex(([s]) => s === ITEMS[b].slot) || (ITEMS[a].atk || 0) + (ITEMS[a].def || 0) - (ITEMS[b].atk || 0) - (ITEMS[b].def || 0));
+const itemIds = Object.keys(ITEMS).filter((k) => !ITEMS[k].slot);
+const itemKind = (k) => (ITEMS[k].key ? 'key' : MATS.has(k) ? 'mat' : ITEMS[k].gem ? 'gem' : 'use');
+const TABS = {
+  m: { label: T('魔物', 'Monsters'), ids: monIds, card: monsterCard, note: T('掉落率是每打倒一隻、每一樣掉落物各自計算。前排有人戴幸運鈴鐺時機率加倍。金幣是實際拿到的數量。', 'Drop chances are rolled for each item on each monster beaten; a Lucky Bell worn in the front row doubles them. Gold is what you actually receive.'),
+    filters: [['', T('全部地區', 'All areas')], ['boss', T('頭目', 'Bosses')], ['join', T('可收編', 'Can join')], ...ZORDER.map((z) => [z, `${T(ZN[z][0], ZN[z][1])}${T(`（第${ZN[z][2]}章）`, ` (Ch. ${ZN[z][2]})`)}`])],
+    match: (id, f) => !f || (f === 'boss' ? MONSTERS[id].boss : f === 'join' ? canRecruit(id) : zonesOf[id] && zonesOf[id].has(f)) },
+  g: { label: T('裝備', 'Equipment'), ids: gearIds, card: itemCard, note: T('綠字是裝上後增加的能力。商店標示的章節是那一章開始販售。', 'The green line is what wearing it adds. Shops are marked with the chapter they sell it in.'),
+    filters: [['', T('全部部位', 'All slots')], ...SLOTS.map(([s, zh, en]) => [s, T(zh, en)])], match: (k, f) => !f || ITEMS[k].slot === f },
+  i: { label: T('道具', 'Items'), ids: itemIds, card: itemCard, note: T('寶物和魔物素材可以賣給商店換錢。', 'Treasures and monster materials can be sold to shops.'),
+    filters: [['', T('全部種類', 'All kinds')], ['use', T('消耗品', 'Consumables')], ['gem', T('寶物', 'Treasures')], ['mat', T('魔物素材', 'Monster materials')], ['key', T('重要道具', 'Key items')]],
+    match: (k, f) => !f || itemKind(k) === f },
+};
+let tab = 'm';
+const names = (k) => (tab === 'm' ? MONSTERS[k].name : ITEMS[k].name).join(' ').toLowerCase();
+function render() {
+  const t = TABS[tab], q = $('q').value.trim().toLowerCase(), f = $('filter').value;
+  const ids = t.ids.filter((k) => t.match(k, f) && (!q || names(k).includes(q)));
+  $('grid').innerHTML = ids.map((k) => t.card(k)).join('') || `<p class="empty">${T('找不到符合的項目。', 'Nothing matches.')}</p>`;
+  $('count').textContent = T(`${ids.length} / ${t.ids.length} 項`, `${ids.length} of ${t.ids.length}`);
+  $('note').textContent = t.note;
+  for (const c of $('grid').querySelectorAll('canvas[data-art]')) io.observe(c);
+}
+function setTab(k, keepFilter) {
+  tab = k;
+  for (const b of $('tabs').children) b.setAttribute('aria-selected', String(b.dataset.tab === k));
+  if (!keepFilter) { $('filter').innerHTML = TABS[k].filters.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join(''); $('q').value = ''; }
+  try { localStorage.setItem('co.gallery.tab', k); } catch (e) { /* ignore */ }
+  render();
+}
+// monster pictures are drawn as they scroll into view
+const io = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { const c = e.target, m = MONSTERS[c.dataset.art]; c.getContext('2d').drawImage(monsterArt(m.art, m.col), 0, 0); io.unobserve(c); } }, { rootMargin: '300px' });
+
+$('tabs').innerHTML = Object.entries(TABS).map(([k, t]) => `<button role="tab" data-tab="${k}">${esc(t.label)}（${t.ids.length}）</button>`).join('');
+$('tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setTab(b.dataset.tab); });
+$('q').placeholder = T('搜尋名字（中文或英文）', 'Search by name (English or Chinese)');
+$('q').addEventListener('input', render); $('filter').addEventListener('change', render);
+// jump from a drop or a monster to its own card
+$('grid').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-go]'); if (!b) return;
+  const [kind, id] = b.dataset.go.split(':'); setTab(kind);
+  const el = $(`${kind}-${id}`); if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600);
+});
+document.title = T('天命之路 圖鑑', 'Chosen Ones · Gallery');
+$('title').textContent = T('天命之路 圖鑑', 'Chosen Ones Gallery');
+$('back').textContent = T('← 回到遊戲', '← Back to the game'); $('back').href = `index.html?lang=${LANG}`;
+$('lang').textContent = EN ? '中文' : 'English'; $('lang').href = `gallery.html?lang=${EN ? 'zh' : 'en'}`;
+document.documentElement.lang = EN ? 'en' : 'zh-Hant';
+let start = new URLSearchParams(location.search).get('tab'); try { start = start || localStorage.getItem('co.gallery.tab') || 'm'; } catch (e) { /* ignore */ }
+setTab(TABS[start] ? start : 'm');
+</script>
+</body>
+</html>
