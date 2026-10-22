@@ -98,6 +98,9 @@ const A = {
   inn, shop, church, saveOffer,
   ranch: () => ranch(), recruit: (mid) => recruit(mid), monsters: () => (S.monsters || []).length,
   chapterEnd: (n) => chapterEnd(n), ending: () => ending(), c5Attack: () => c5Attack(),
+  // go straight to another map's entrance (the Abyss gate), and restore the whole party (the spring in the Abyss)
+  warp: (id) => { const m = MAPS[id]; sfx('door'); fade = 1; const [x, y] = m.anchor ? m.anchor.start : [9, m.h - 1]; enterMap(id, x, y, 'down'); },
+  restore: () => { for (const m of members()) { m.hp = m.maxhp; m.mp = m.maxmp; m.poison = false; } },
 };
 async function runScript(fn) {
   running++;
@@ -498,13 +501,18 @@ async function c5Attack() {
   S.savePoint = { map: 'c5_cross', x: 9, y: 13, dir: 'up' }; save();
 }
 let endT = 0;
-async function ending() { music('ending'); mode = 'ending'; endT = 0; S.cleared = true; save(); throw ABORT; }
+async function ending() {
+  music('ending'); mode = 'ending'; endT = 0; S.cleared = true;
+  if (!S.clear) S.clear = { name: S.name, party: S.active.map((id) => [id, S.members[id].lv]), date: new Date().toISOString().slice(0, 10) };
+  save(); throw ABORT;
+}
 
 // ---------------------------------------------------------------- the title
 let titleSel = 0;
+let titleSave = null;                 // the save as the title screen shows it (cleared? which stars?)
 function titleMenu() {
   mode = 'title'; scene = null; UI.stack.length = 0; music('title');
-  const has = !!load();
+  titleSave = load(); const has = !!titleSave;
   (async () => {
     const opts = [...(has ? [T('繼續冒險', 'Continue')] : []), T('新的冒險', 'New Adventure'), EN ? '中文' : 'English', T('音樂：', 'Music: ') + (isMuted() ? T('關', 'off') : T('開', 'on')), ...(HDR ? [hdLabel()] : []), T('圖鑑', 'Gallery')];
     const i = await menu(opts, { x: 80, y: 146, cancel: false });
@@ -614,7 +622,15 @@ function drawTitle() {
   }
   for (let i = 0; i < (hd ? 0 : 60); i++) { const x = (i * 97) % VW, y = (i * 53) % 130; g.fillStyle = `rgba(255,255,255,${0.3 + 0.7 * Math.abs(Math.sin(ftime + i))})`; g.fillRect(x * SC, y * SC, SC, SC); }
   if (hd) { g.save(); g.shadowColor = 'rgba(255,190,80,0.8)'; g.shadowBlur = 18; } text(T('天命之路', 'Chosen Ones'), 128, 42, { align: 'center', size: 26 * SC, color: '#ffe080' }); if (hd) g.restore();
-  text(T('五章物語', 'A Tale in Five Chapters'), 128, 80, { align: 'center', size: 10 * SC, color: '#fff' });
+  const cleared = titleSave && titleSave.cleared;
+  text(T('五章物語', 'A Tale in Five Chapters'), 128, cleared ? 72 : 80, { align: 'center', size: 10 * SC, color: '#fff' });
+  if (cleared) {
+    const c = titleSave.clear, stars = titleSave.flags && titleSave.flags.abyss_won ? '★★' : '★';
+    const who = c ? c.party.map(([id, lv]) => `${id === 'hero' ? c.name : T(CHARS[id].name)} ${lv}`).join('・') : '';
+    text(`${stars} ${T('已通關', 'Cleared')}${c ? `  ${c.date}` : ''}`, 128, 86, { align: 'center', size: 7 * SC, color: '#ffe080' });
+    if (who) text(`Lv  ${who}`, 128, 95, { align: 'center', size: 6 * SC, color: '#ddd' });
+    if (!(titleSave.flags && titleSave.flags.abyss_won)) text(T('魔王城一樓，出現了通往深淵的門……', 'On the Dark Castle\'s first floor, a gate to the Abyss has opened…'), 128, 104, { align: 'center', size: 6 * SC, color: '#c8a0ff' });
+  }
   if (!hd) ['kaldor', 'rhea', 'barlow', 'cass', 'tolle', 'mira', 'thea', 'orin', 'hero'].forEach((id, i) => g.drawImage(person(CHARS[id].look, 'down', Math.floor(ftime * 2 + i) % 2), (24 + i * 24) * SC, 112 * SC, T16 * 1.2, T16 * 1.2));
   text('© ' + T('像素遊樂場', 'Pixel Playground'), 128, 226, { align: 'center', size: 6 * SC, color: hd ? '#bbb' : '#888' });
 }

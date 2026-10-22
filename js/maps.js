@@ -1,6 +1,7 @@
 // The world: the overworld, towns, castles and dungeons, with every person in them and the story of the five chapters.
 // Maps are rows of characters; TILE says what each character is. Story scripts are async functions given the game API `A`.
 import { T } from './i18n.js';
+import { ITEMS } from './data.js';
 
 export const TILE = {
   '.': 'grass', ',': 'path', F: 'flowers', T: 'tree', w: 'water', _: 'stone', '=': 'wood', r: 'carpet', X: 'cwall', '#': 'wall', ':': 'floor',
@@ -661,13 +662,45 @@ export function buildMaps() {
           await A.says([T('天空守護者：「……很好。拿去吧，勇者。」', 'Sky Guardian: "…Well done. Take it, Hero."'), T('得到了天空之劍！', 'Received the Sword of Heaven!'), T('劍身綻放出耀眼的光芒——遙遠北方的黑暗瘴氣，被光芒一掃而空！', 'The blade blazes with light — and far to the north, the dark blight is swept away!')]);
         } }] } } }));
   Object.assign(M, dungeon('c5_dark', 97, 'dark', 3, { enc: 'dark', bg: 'dark', name: ['魔王城', 'Dark Castle'], music: 'boss', size: { w: 26, h: 18 },
-    floors: { 1: { chests: [{ item: 'leaf' }, { item: 'elfwater' }, { gold: 3000 }] }, 2: { chests: [{ item: 'leaf' }, { item: 'elfwater' }, { item: 'platmail' }] },
+    floors: { 1: { chests: [{ item: 'leaf' }, { item: 'elfwater' }, { gold: 3000 }],
+        // after the ending: the way down into the Abyss
+        npcs: [{ at: (a) => [a.start[0] + 2, a.start[1] + 2], look: 'mon:shade', dir: 'down', when: (A) => A.flag('won'), talk: async (A) => {
+          await A.says([T('深淵的守門人：「……打倒暗帝的人啊。這座城的地底，還有一個更深的黑暗。」', 'Keeper of the Abyss: "…You who struck down the Dark Emperor. Beneath this castle lies a deeper darkness."'),
+            T('深淵的守門人：「深淵迷宮共有十層，越往下魔物越強。最深處，深淵之王正在等待。」', 'Keeper of the Abyss: "The Abyss has ten floors, each crueller than the last. At the bottom, the Abyss King waits."')]);
+          if (await A.ask(T('要進入深淵嗎？', 'Enter the Abyss?'), [T('進入', 'Enter'), T('不要', 'Not now')]) !== 0) return;
+          return A.warp('c5_abyss_1');
+        } }] },
+      2: { chests: [{ item: 'leaf' }, { item: 'elfwater' }, { item: 'platmail' }] },
       3: { tiles: [{ at: (a) => [a.end[0], a.end[1] - 1], c: 'k' }],
         npcs: [{ at: (a) => a.end, look: 'mon:solzar', dir: 'down', when: (A) => !A.flag('won'), talk: async (A) => {
           await A.says([T('索爾札：「終於來了啊，勇者。」', 'Solzar: "So you have finally come, Hero."'), T('索爾札：「人類貪婪、醜陋，只會互相殘殺。我要用進化之秘法成為新世界的神，把這個世界交給魔族！」', 'Solzar: "Humans are greedy and ugly; all they do is kill one another. With the secret of evolution I will become the god of a new world, and give it to my kind!"'), T('索爾札：「被命運引導的人們……就在這裡，結束你們的命運吧！」', 'Solzar: "You who are guided by fate… let your fate end here!"')]);
           if (await A.battle([['solzar', 1]], { bg: 'dark', final: true }) !== 'win') return;
           A.set('won'); return A.ending();
         } }] } } }));
+  // after the ending: the Abyss, ten floors under the Dark Castle (leaving it puts you outside the castle)
+  const TOP = Object.keys(ITEMS).filter((k) => ITEMS[k].tier === 8), ABYSS_FLOORS = 10, abyssFloors = {};
+  for (let f = 1; f <= ABYSS_FLOORS; f++) abyssFloors[f] = { chests: [{ item: TOP[(f * 7) % TOP.length] }, { item: TOP[(f * 7 + 3) % TOP.length] }, f % 2 ? { item: 'leaf' } : { gold: 1500 * f }] };
+  // halfway down, a spirit of the spring heals and keeps your Adventure Log
+  abyssFloors[5].npcs = [{ at: (a) => [a.start[0] + 2, a.start[1] + 2], look: 'sage', dir: 'down', talk: async (A) => {
+    A.restore(); A.sfx('heal');
+    await A.say(T('泉之精靈：「勇敢的人們，在這裡休息一下吧。」（全隊的 HP 和 MP 都恢復了。）', 'Spirit of the spring: "Brave ones, rest here a while." (The whole party is restored.)'));
+    await A.saveOffer(T('泉之精靈', 'Spirit of the spring'));
+  } }];
+  // the bottom: the Abyss King (he can be fought again; every win he leaves his treasures)
+  abyssFloors[ABYSS_FLOORS].tiles = [{ at: (a) => [a.end[0], a.end[1] - 1], c: 'k' }];
+  abyssFloors[ABYSS_FLOORS].npcs = [{ at: (a) => a.end, look: 'mon:abyssking', dir: 'down', talk: async (A) => {
+    if (A.flag('abyss_won')) {
+      if (await A.ask(T('深淵之王：「又來了嗎……要再戰一次嗎？」', 'Abyss King: "You return… Shall we fight again?"'), [T('挑戰', 'Fight'), T('不要', 'Not now')]) !== 0) return;
+    } else {
+      await A.says([T('深淵之王：「暗帝不過是我的影子。你們竟然走到了這裡。」', 'Abyss King: "The Dark Emperor was but my shadow. And yet you have come this far."'),
+        T('深淵之王：「來吧，被選中的人們。讓我看看命運的盡頭！」', 'Abyss King: "Come, chosen ones. Show me the end of fate!"')]);
+    }
+    if (await A.battle([['abyssking', 1]], { bg: 'dark' }) !== 'win') return;
+    const first = !A.flag('abyss_won'); A.set('abyss_won');
+    if (first) await A.says([T('深淵之王：「……很好。這份力量，配得上天命之名。」', 'Abyss King: "…Well done. Such strength is worthy of the name of fate."'), T('深淵的黑暗散去了。（標題畫面多了一顆星。）', 'The darkness of the Abyss lifts. (A second star now shines on the title screen.)')]);
+  } }];
+  Object.assign(M, dungeon('c5_abyss', 131, 'dark', ABYSS_FLOORS, { enc: 'abyss1', bg: 'dark', name: ['深淵迷宮', 'The Abyss'], size: { w: 24, h: 18 }, floors: abyssFloors }));
+  for (let f = 1; f <= ABYSS_FLOORS; f++) { const m = M[`c5_abyss_${f}`]; m.enc = f <= 3 ? 'abyss1' : f <= 7 ? 'abyss2' : 'abyss3'; m.exitPlace = 'c5_dark_1'; }
   // where each map's edges and stairs lead
   for (const p of PLACES) if (M[p.id]) { M[p.id].place = p; if (!M[p.id].name) M[p.id].name = p.name; }
   return M;

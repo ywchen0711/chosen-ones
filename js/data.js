@@ -168,6 +168,10 @@ export const ITEMS = {
   luckbell:  A('幸運鈴鐺', 'Lucky Bell', 2, 2000, ALL, 'n', { fx: 'luck' }),
   guardneck: A('守護項鍊', 'Guardian Pendant', 10, 3000, ALL, 'n'),
   starpendant: A('星之墜飾', 'Star Pendant', 6, 8000, ALL, 'n', { bonus: { str: 6, agi: 6 } }),
+  // after the ending: what the Abyss King leaves behind
+  doomblade: W('終焉之劍', 'Doomblade', 110, 0, SWORD + ' rhea orin', { fx: 'crit' }),
+  abysscrown:A('深淵之冠', 'Abyss Crown', 30, 0, ALL, 'h', { fx: 'regen' }),
+  voidring:  A('虛空之戒', 'Void Ring', 4, 0, ALL, 'r', { bonus: { str: 10, agi: 10 }, fx: 'mpregen' }),
 };
 // the eight equipment slots, and what the special powers do
 export const SLOTS = [['w', '武器', 'Weapon'], ['a', '鎧甲', 'Armour'], ['s', '盾牌', 'Shield'], ['h', '頭盔', 'Helmet'], ['g', '護手', 'Gauntlets'], ['b', '靴子', 'Boots'], ['r', '戒指', 'Ring'], ['n', '項鍊', 'Necklace']];
@@ -280,6 +284,9 @@ const DESC = {
   luckbell: ['叮噹作響的鈴鐺。每多一人戴（含馬車），掉寶率就多加一倍。', 'A jingling bell. Each wearer, wagon included, adds the base drop chance again.'],
   guardneck: ['有守護之力的項鍊，防禦力很高。', 'A pendant with a guardian\'s power. Strong defence.'],
   starpendant: ['星星形狀的墜飾，同時提升力量和速度。', 'A star-shaped pendant that raises strength and speed.'],
+  doomblade: ['深淵之王的劍，斬斷一切的終焉之刃。容易打出會心一擊。', 'The Abyss King\'s blade, the edge that ends all things. Lands excellent hits often.'],
+  abysscrown: ['深淵之王的王冠。戴著的人每回合會恢復 HP。', 'The Abyss King\'s crown. Its wearer regains HP each round.'],
+  voidring: ['從虛空中取出的戒指，大幅提升力量和速度，每回合恢復 MP。', 'A ring drawn out of the void: much more strength and speed, and MP each round.'],
 };
 for (const [k, d] of Object.entries(DESC)) if (ITEMS[k]) ITEMS[k].desc = d;
 // the lines an item's info box shows, as [中文, English] pairs: gear gets a line of stats and powers first
@@ -567,6 +574,27 @@ export const GEN_MONSTERS = 456;
   // the hand-made monsters join at the level of the first area they live in
   ZORDER.forEach((zone, zi) => { for (const grp of ZONES[zone]) for (const [id] of grp) if (MONSTERS[id].lv === undefined) MONSTERS[id].lv = ZLV[zi]; });
 }
+// ---------------------------------------------------------------- after the ending: the Abyss under the Dark Castle
+// three depths (floors 1-3, 4-7, 8-10): the dark castle's monsters grown stronger, with the best gear to find
+const ABYSS = [['abyss1', ['深淵', 'Abyssal'], '#4a2a7a', 1.9, 1.8, 44, null], ['abyss2', ['虛無', 'Void'], '#1a4a5a', 2.6, 2.6, 47, 'icestorm'], ['abyss3', ['終焉', 'Doom'], '#5a0a1a', 3.3, 3.6, 50, 'double']];
+const ABYSS_BASES = ['demonknight', 'blackdragon', 'darkmage', 'irongolem', 'ghostknight', 'archimp', 'drake', 'ogre'];
+{
+  const rnd = seeded(4242), top = Object.keys(ITEMS).filter((k) => ITEMS[k].tier === 8), gems = TREASURES.map(([k]) => k);
+  for (const [zone, [pzh, pen], col, s, r, lv, extra] of ABYSS) {
+    const ids = ABYSS_BASES.map((bid, i) => {
+      const b = MONSTERS[bid], id = `${zone}_${bid}`, acts = b.acts.map(([x, w]) => [x, w]);
+      if (extra && !acts.some(([x]) => x === extra)) acts.push([extra, 1]);
+      MONSTERS[id] = M(pzh + b.name[0], `${pen} ${b.name[1]}`, b.art, [col, b.col[1]], r0(b.hp * s), r0(b.atk * (1 + (s - 1) * 0.55)), r0(b.def * (1 + (s - 1) * 0.5)), r0(b.agi * 1.1),
+        r0(b.xp * r), r0(b.gold * r), acts, { zone, lv, ...(b.size ? { size: b.size } : {}) });
+      MONSTERS[id].drops = [[top[Math.floor(rnd() * top.length)], 18 + (i % 3) * 6], ['leaf', 30], [gems[i % gems.length], 10], [MAT[b.art][0], 6]];
+      return id;
+    });
+    ZONES[zone] = [...ids.map((id) => [[id, 1, 2]]), [[ids[0], 1, 1], [ids[2], 1, 1]], [[ids[1], 1, 1], [ids[5], 1, 2]], [['metal', 2, 4]]];
+  }
+}
+MONSTERS.abyssking = M('深淵之王', 'Abyss King', 'demon', ['#120a24', '#b060ff'], 8000, 165, 100, 58, 30000, 10000,
+  [['attack', 3], ['double', 2], ['kaboom', 1], ['icestorm', 1], ['roar', 1], ['heal', 1]], { boss: true, size: 1.8 });
+MONSTERS.abyssking.drops = [['doomblade', 1], ['abysscrown', 1], ['voidring', 1]];
 // signature moves: every monster that would otherwise only swing at you gets the move its kind is known for
 // heavy: a big blow that sometimes misses · stun: a blow that may leave you unable to act · drain: heals itself by half
 // rage: its attack rises for the rest of the fight · sweep: hits everyone, lighter · daze: may stop several of you a turn
