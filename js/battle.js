@@ -57,6 +57,7 @@ function drawBattle(G, B, g, dt) {
     g.drawImage(img, (cx - sz / 2) * SC, (150 - sz + bob) * SC, sz * SC, sz * SC);
     if (m.sleep > 0) text('Zzz', cx + sz * 0.3, 150 - sz, { color: '#a8d0ff', size: 7 * SC });
     g.restore();
+    if (!m.gone) UI.drawTags(UI.statusTags(m), cx, [151], sz + 8, 5 * SC, 'center');
   });
   // damage numbers
   for (const p of B.pops) { p.t += dt; g.globalAlpha = Math.max(0, 1 - p.t / 0.9); text(String(p.n), p.x, p.y - p.t * 18, { align: 'center', color: p.col, size: 10 * SC }); g.globalAlpha = 1; }
@@ -69,7 +70,7 @@ function drawBattle(G, B, g, dt) {
     text(nm(m).slice(0, EN ? 7 : 4), bx + 7, 8, { color: col });
     text(`H${String(m.hp).padStart(4)}`, bx + 7, 20, { color: col, size: 7 * SC });
     text(`M${String(m.mp).padStart(4)}`, bx + 7, 31, { color: col, size: 7 * SC });
-    if (m.sleep > 0 || m.poison) text(m.sleep > 0 ? 'Z' : '☠', bx + w - 14, 8, { color: '#a8d0ff', size: 7 * SC });
+    UI.drawTags(UI.statusTags(m), bx + w - 7, [20, 31], w - 16 - UI.measure(`H${String(m.hp).padStart(4)}`, 7 * SC), 6 * SC);
     if (B.turn === m) text('▼', bx + w / 2 - 4, 38, { color: '#ffe080', size: 6 * SC });
   });
   g.restore();
@@ -326,7 +327,7 @@ export async function battle(G, spec, opts = {}) {
   if (G.nameOf) nameOf = G.nameOf;
   const mons = []; for (const [id, n] of spec) for (let i = 0; i < n; i++) mons.push(mkMon(id));
   label(mons);
-  const B = { mons, bg: opts.bg || 'field', shake: 0, pops: [], time: 0, turn: null, boss: mons.some((m) => m.d.boss) };
+  const B = { mons, bg: opts.bg || 'field', shake: 0, pops: [], time: 0, turn: null, boss: mons.some((m) => m.d.boss) }; G.liveBattle = B;   // test hook
   G.setScene({ battle: true, draw: (g, dt) => drawBattle(G, B, g, dt) });
   G.music(B.boss ? 'boss' : 'battle');
   for (const p of G.active()) { p.buff = false; p.oomph = false; p.rage = false; p.defending = false; p.sleep = 0; }

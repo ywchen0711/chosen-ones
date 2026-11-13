@@ -216,7 +216,7 @@ async function fieldMenu() {
     }
   } finally { close(); }
 }
-const pickMember = (title, list = members()) => menu(list.map((m) => ({ label: nameOf(m.id), right: `${m.hp}/${m.maxhp}` })), { x: 80, y: 8, title });
+const pickMember = (title, list = members()) => menu(list.map((m) => ({ label: nameOf(m.id) + (m.poison && m.hp > 0 ? T(' 〔毒〕', ' [PSN]') : ''), right: `${m.hp}/${m.maxhp}` })), { x: 80, y: 8, title });
 async function itemMenu() {
   const keys = Object.keys(S.bag); if (!keys.length) return say(T('沒有任何道具。', 'You have no items.'));
   const i = await menu(keys.map((k) => ({ label: T(ITEMS[k].name), right: `×${S.bag[k]}` })), { x: 60, y: 8, rows: 9, info: (it, sel) => itemInfo(keys[sel]) });
@@ -296,6 +296,7 @@ async function statusMenu() {
   const m = members()[mi], next = (await import('./data.js')).xpFor(m.lv + 1) - m.xp;
   const close = UI.panel(() => {
     box(8, 8, 240, 224); text(nameOf(m.id), 18, 16, { color: '#ffe080' }); text(T(CHARS[m.id].job), 238, 16, { align: 'right', color: '#aaa' });
+    UI.drawTags(UI.statusTags(m), 24 + UI.measure(nameOf(m.id)), [17], 208 - UI.measure(nameOf(m.id)) - UI.measure(T(CHARS[m.id].job)), 7 * SC, 'left');
     const rowsS = [[T('等級', 'Level'), m.lv], ['HP', `${m.hp} / ${m.maxhp}`], ['MP', `${m.mp} / ${m.maxmp}`], [T('力量', 'Strength'), m.str], [T('速度', 'Agility'), agiOf(m)], [T('體質', 'Resilience'), m.def],
       [T('攻擊力', 'Attack'), atk(m)], [T('防禦力', 'Defence'), defense(m)], [T('經驗值', 'Experience'), m.xp], [T('距下一級', 'To next level'), Math.max(0, next)]];
     rowsS.forEach(([k, v], i) => { text(k, 18, 34 + i * 13); text(String(v), 140, 34 + i * 13, { align: 'right' }); });
@@ -602,7 +603,7 @@ function drawField() {
   else if (MAP.name && ftime - enteredAt < 2.2) { box(8, 8, Math.max(80, UI.measure(T(MAP.name)) + 24), 24); text(T(MAP.name) + (MAP.floor ? ` ${MAP.floor}F` : ''), 18, 14); }
   if (!P.moving && !running && !UI.busy() && idleT > 1.2) {
     const act = S.active.map((id) => S.members[id]), w = Math.min(60, 248 / act.length);
-    act.forEach((m, i) => { const bx = 4 + i * w; box(bx, 196, w - 2, 40); const col = m.hp <= 0 ? '#ff5a5a' : m.hp < m.maxhp / 4 ? '#ffd040' : '#fff'; text(nameOf(m.id).slice(0, EN ? 7 : 4), bx + 6, 201, { color: col, size: 7 * SC }); text(`H ${m.hp}`, bx + 6, 213, { color: col, size: 7 * SC }); text(`M ${m.mp}`, bx + 6, 224, { color: col, size: 7 * SC }); });
+    act.forEach((m, i) => { const bx = 4 + i * w; box(bx, 196, w - 2, 40); const col = m.hp <= 0 ? '#ff5a5a' : m.hp < m.maxhp / 4 ? '#ffd040' : '#fff'; text(nameOf(m.id).slice(0, EN ? 7 : 4), bx + 6, 201, { color: col, size: 7 * SC }); text(`H ${m.hp}`, bx + 6, 213, { color: col, size: 7 * SC }); text(`M ${m.mp}`, bx + 6, 224, { color: col, size: 7 * SC }); UI.drawTags(UI.statusTags(m), bx + w - 6, [213, 224], w - 14 - UI.measure(`H ${m.hp}`, 7 * SC), 6 * SC); });
   }
 }
 let enteredAt = 0, idleT = 0;

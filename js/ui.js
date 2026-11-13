@@ -23,6 +23,27 @@ export function text(str, x, y, opts = {}) {
   g.restore();
 }
 export function measure(str, size = 8 * S) { ctx.save(); ctx.font = `${size}px ${FONT}`; const w = ctx.measureText(str).width / S; ctx.restore(); return w; }
+// status tags: short coloured marks so the player sees at a glance who is poisoned, asleep, stronger or weaker
+const TAGS = [['poison', '毒', 'PSN', '#a0ff60'], ['sleep', '眠', 'SLP', '#a8d0ff'], ['oomph', '攻↑', 'ATK↑', '#ffb060'], ['rage', '怒', 'RAGE', '#ff7060'], ['buff', '防↑', 'DEF↑', '#80d8ff'], ['sap', '防↓', 'DEF↓', '#ff9080']];
+export const statusTags = (x) => (x.hp > 0 ? TAGS.filter(([k]) => x[k] && !(k === 'sleep' && !(x.sleep > 0))).map(([, zh, en, c]) => [EN ? en : zh, c]) : []);
+// lay the tags into rows (one y per row, maxW wide, ending at x for 'right', starting at x for 'left', centred on x for 'center');
+// if they don't all fit, the rows page through them about once a second
+export function drawTags(list, x, ys, maxW, size = 6 * S, align = 'right') {
+  if (!list.length || maxW <= 0) return;
+  const gap = 2, w = (t) => measure(t[0], size);
+  const pages = []; let rows = [[]], used = 0;
+  for (const t of list) {
+    if (used && used + gap + w(t) > maxW) { if (rows.length < ys.length) rows.push([]); else { pages.push(rows); rows = [[]]; } used = 0; }
+    rows[rows.length - 1].push(t); used += (used ? gap : 0) + w(t);
+  }
+  pages.push(rows);
+  const page = pages[Math.floor(performance.now() / 1000) % pages.length];
+  page.forEach((row, r) => {
+    const rw = row.reduce((s, t) => s + w(t), 0) + gap * (row.length - 1);
+    let cx = align === 'right' ? x - rw : align === 'center' ? x - rw / 2 : x;
+    for (const t of row) { text(t[0], cx, ys[r], { color: t[1], size }); cx += w(t) + gap; }
+  });
+}
 // wrap text to a width (logical px); CJK breaks anywhere, English at spaces
 export function wrap(str, width, size = 8 * S) {
   const out = [];
