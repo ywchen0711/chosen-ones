@@ -23,6 +23,12 @@ export function text(str, x, y, opts = {}) {
   g.restore();
 }
 export function measure(str, size = 8 * S) { ctx.save(); ctx.font = `${size}px ${FONT}`; const w = ctx.measureText(str).width / S; ctx.restore(); return w; }
+// shorten a string to fit a width (logical px), ending it with "…" so it never runs into the next column
+export function fit(str, width, size = 8 * S) {
+  str = String(str); if (measure(str, size) <= width) return str;
+  let s = str; while (s.length > 1 && measure(s.trimEnd() + '…', size) > width) s = s.slice(0, -1);
+  return s.trimEnd() + '…';
+}
 // status tags: short coloured marks so the player sees at a glance who is poisoned, asleep, stronger or weaker
 const TAGS = [['poison', '毒', 'PSN', '#a0ff60'], ['sleep', '眠', 'SLP', '#a8d0ff'], ['oomph', '攻↑', 'ATK↑', '#ffb060'], ['rage', '怒', 'RAGE', '#ff7060'], ['buff', '防↑', 'DEF↑', '#80d8ff'], ['sap', '防↓', 'DEF↓', '#ff9080']];
 export const statusTags = (x) => (x.hp > 0 ? TAGS.filter(([k]) => x[k] && !(k === 'sleep' && !(x.sleep > 0))).map(([, zh, en, c]) => [EN ? en : zh, c]) : []);
@@ -102,7 +108,7 @@ export function menu(items, opts = {}) {
     const cols = opts.cols || 1, rows = Math.ceil(items.length / cols), per = opts.rows || Math.min(rows, 9);
     const colW = opts.colW || Math.max(...items.map((it) => measure(it.label) + (it.right ? measure(it.right) + 14 : 0))) + 22;
     const w = opts.w || Math.min(240, colW * cols + 12), h = per * 14 + 14 + (opts.title ? 14 : 0);
-    const x = opts.x ?? 8, y = Math.max(4, Math.min(opts.y ?? 8, VH - 4 - h));   // never past the bottom of the screen
+    const x = Math.max(4, Math.min(opts.x ?? 8, VW - 4 - w)), y = Math.max(4, Math.min(opts.y ?? 8, VH - 4 - h));   // never past the edges of the screen
     let sel = Math.min(opts.start || 0, items.length - 1), top = 0;
     const win = push({
       draw() {
@@ -112,8 +118,9 @@ export function menu(items, opts = {}) {
         for (let r = 0; r < per; r++) for (let c = 0; c < cols; c++) {
           const i = (top + r) * cols + c, it = items[i]; if (!it) continue;
           const ix = x + 6 + c * cw, iy = oy + r * 14;
-          text(it.label, ix + 10, iy, { color: it.disabled ? '#777' : it.color || '#fff' });
-          if (it.tag) text(it.tag, ix + 14 + measure(it.label), iy + 1, { size: 7 * S, color: it.tagColor || '#7fff8a' });
+          const lab = fit(it.label, cw - 14 - (it.right ? measure(it.right) + 8 : 0) - (it.tag ? measure(it.tag, 7 * S) + 4 : 0));
+          text(lab, ix + 10, iy, { color: it.disabled ? '#777' : it.color || '#fff' });
+          if (it.tag) text(it.tag, ix + 14 + measure(lab), iy + 1, { size: 7 * S, color: it.tagColor || '#7fff8a' });
           if (it.right) text(it.right, ix + cw - 4, iy, { align: 'right', color: it.disabled ? '#777' : '#ddd' });
           if (i === sel && !opts.inactive) cursor(ix, iy);
         }
@@ -151,8 +158,9 @@ export function ask(str, options) {
 }
 // a panel that just shows something until closed by the caller
 // a small box of notes (an item's description): lines are [text, colour]; at the bottom of the screen unless top, w wide
-export function infoBox(lines, { w = 240, top = false } = {}) {
-  const rows = lines.flatMap(([s, c]) => wrap(s, w - 14, 7 * S).map((t) => [t, c])).slice(0, 5), h = rows.length * 11 + 11, y = top ? 8 : 234 - h;
+// (or at y, e.g. just under the battle's party windows so it never hides anyone's HP)
+export function infoBox(lines, { w = 240, top = false, y: at = null, max = 5 } = {}) {
+  const rows = lines.flatMap(([s, c]) => wrap(s, w - 14, 7 * S).map((t) => [t, c])).slice(0, max), h = rows.length * 11 + 11, y = at != null ? at : top ? 8 : 234 - h;
   if (!rows.length) return;
   box(8, y, w, h); rows.forEach(([t, c], i) => text(t, 14, y + 6 + i * 11, { size: 7 * S, color: c }));
 }

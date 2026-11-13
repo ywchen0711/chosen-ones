@@ -67,7 +67,7 @@ function drawBattle(G, B, g, dt) {
   act.forEach((m, i) => {
     const bx = 4 + i * w; box(bx, 2, w - 2, 44);
     const col = m.hp <= 0 ? '#ff5a5a' : m.hp < m.maxhp / 4 ? '#ffd040' : '#fff';
-    text(nm(m).slice(0, EN ? 7 : 4), bx + 7, 8, { color: col });
+    text(UI.fit(nm(m), w - 16), bx + 7, 8, { color: col });
     text(`H${String(m.hp).padStart(4)}`, bx + 7, 20, { color: col, size: 7 * SC });
     text(`M${String(m.mp).padStart(4)}`, bx + 7, 31, { color: col, size: 7 * SC });
     UI.drawTags(UI.statusTags(m), bx + w - 7, [20, 31], w - 16 - UI.measure(`H${String(m.hp).padStart(4)}`, 7 * SC), 6 * SC);
@@ -119,7 +119,7 @@ async function chooseCommand(G, B, m) {
     if (ci === 3) {
       const usable = Object.keys(G.bag).filter((k) => ITEMS[k] && ['heal', 'cure', 'mp', 'revive'].includes(ITEMS[k].use));
       if (!usable.length) { await say(T('沒有可以使用的道具。', 'Nothing you can use here.')); continue; }
-      const ii = await menu(usable.map((k) => ({ label: T(ITEMS[k].name), right: `×${G.bag[k]}` })), { x: 88, y: 100, info: (it, sel) => UI.infoBox(itemLines(usable[sel]).map((p) => [T(...p), '#fff']), { top: true }) });
+      const ii = await menu(usable.map((k) => ({ label: T(ITEMS[k].name), right: `×${G.bag[k]}` })), { x: 88, y: 104, info: (it, sel) => UI.infoBox(itemLines(usable[sel]).map((p) => [T(...p), '#fff']), { y: 50, max: 4 }) });
       if (ii < 0) continue;
       const t = await chooseTarget(G, B, ITEMS[usable[ii]].use === 'revive' ? 'dead' : 'ally', m);
       if (t === undefined) continue;

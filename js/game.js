@@ -156,7 +156,7 @@ async function shop(list) {
   for (;;) {
     const i = await ask(T('老闆：「歡迎光臨！要買什麼嗎？」', 'Shopkeeper: "Welcome! What can I do for you?"'), [T('買', 'Buy'), T('賣', 'Sell'), T('離開', 'Leave')]);
     if (i === 0) {
-      const ii = await menu(list.map((k) => ({ label: T(ITEMS[k].name), right: `${ITEMS[k].price}G` })), { x: 40, y: 8, title: `${S.gold} G`, info: (it, sel) => { const k = list[sel]; if (!k) return; if (ITEMS[k].slot) equipInfo(k); else itemInfo(k); } });
+      const ii = await menu(list.map((k) => ({ label: T(ITEMS[k].name), right: `${ITEMS[k].price}G` })), { x: 40, y: 8, rows: 8, title: `${S.gold} G`, info: (it, sel) => { const k = list[sel]; if (!k) return; if (ITEMS[k].slot) equipInfo(k); else itemInfo(k); } });
       if (ii < 0) continue;
       const k = list[ii], it = ITEMS[k];
       if (S.gold < it.price) { await say(T('金幣好像不夠呢。', 'You don\'t seem to have enough gold.')); continue; }
@@ -183,7 +183,7 @@ function equipInfo(k) {
   const it = ITEMS[k]; box(150, 150, 98, 84); let y = 157;
   for (const m of members().slice(0, 5)) {
     const can = canEquip(it, m.id), [da, dd] = gearDiff(m, k), up = da + dd > 0;
-    text(nameOf(m.id).slice(0, EN ? 6 : 3), 157, y, { color: can ? '#fff' : '#777', size: 7 * SC });
+    text(UI.fit(nameOf(m.id), 46, 7 * SC), 157, y, { color: can ? '#fff' : '#777', size: 7 * SC });
     text(can ? (da || dd ? `${da >= 0 ? '+' : ''}${da}/${dd >= 0 ? '+' : ''}${dd}` : '★') : '—', 240, y, { align: 'right', color: can ? (up ? '#7fff8a' : '#ccc') : '#777', size: 7 * SC });
     y += 14;
   }
@@ -205,14 +205,16 @@ async function fieldMenu() {
   if (S.ch === 5) opts.push(['tactics', T('作戰', 'Tactics')]);
   if (S.active.length + S.wagon.length > 4) opts.push(['party', T('隊伍', 'Party')]);
   opts.push(['system', T('系統', 'System')]);
-  const close = UI.panel(() => { box(176, 8, 72, 40); text(`${S.gold}`, 240, 14, { align: 'right' }); text('G', 182, 14, { color: '#ffe080' }); text(T(`第${S.ch}章`, `Ch. ${S.ch}`), 182, 30, { color: '#aaa', size: 7 * SC }); });
+  let sub = false;   // a sub-menu is open: the gold box would show through its windows
+  const close = UI.panel(() => { if (sub) return; box(176, 8, 72, 40); text(`${S.gold}`, 240, 14, { align: 'right' }); text('G', 182, 14, { color: '#ffe080' }); text(T(`第${S.ch}章`, `Ch. ${S.ch}`), 182, 30, { color: '#aaa', size: 7 * SC }); });
   try {
     for (;;) {
       const i = await menu(opts.map((o) => o[1]), { x: 8, y: 8 });
       if (i < 0) return;
-      const k = opts[i][0];
+      const k = opts[i][0]; sub = true;
       if (k === 'items') await itemMenu(); else if (k === 'spells') await spellMenu(); else if (k === 'equip') await equipMenu(); else if (k === 'status') await statusMenu();
       else if (k === 'tactics') await G.chooseTactic(); else if (k === 'party') await partyMenu(); else if (k === 'system') { if (await systemMenu()) return; }
+      sub = false;
     }
   } finally { close(); }
 }
@@ -269,7 +271,7 @@ async function equipMenu() {
       text(T('·數字 = 可換的件數', '·N = pieces you can wear'), 26 + UI.measure(T('背包裡有更強的　', 'stronger in the bag  '), 7 * SC), 171, { size: 7 * SC, color: '#bbb' });
       let x = 16, y = 186;
       for (const [i, p] of list.entries()) {
-        const nm = nameOf(p.id).slice(0, EN ? 7 : 4), up = upgrades(p) > 0, w = UI.measure(nm, 7 * SC) + (up ? 10 : 0) + 8;
+        const nm = UI.fit(nameOf(p.id), 60, 7 * SC), up = upgrades(p) > 0, w = UI.measure(nm, 7 * SC) + (up ? 10 : 0) + 8;
         if (x + w > 244) { x = 16; y += 12; } if (y > 222) break;
         text(nm, x, y, { size: 7 * SC, color: i === mi ? '#ffe080' : '#ccc' }); if (up) text('▲', x + w - 16, y, { size: 7 * SC, color: '#7fff8a' });
         x += w;
@@ -286,7 +288,7 @@ async function equipMenu() {
     if (si < 0) return;
     start = si;
     const slot = slots[si][0], opts = bagFor(m, slot).sort((a, b) => gearScore(m, b) - gearScore(m, a));
-    const ii = await menu([{ label: T('（卸下）', '(remove)') }, ...opts.map((k) => ({ label: T(ITEMS[k].name), right: short(ITEMS[k]), key: k, tag: gearScore(m, k) > 0 ? '▲' : '' }))], { x: 60, y: 30, info: (it) => { if (it && it.key) { const [da, dd] = gearDiff(m, it.key); box(150, 150, 98, 30); text(`${T('攻', 'ATK')} ${da >= 0 ? '+' : ''}${da}`, 157, 156, { size: 7 * SC, color: da > 0 ? '#7fff8a' : '#ccc' }); text(`${T('防', 'DEF')} ${dd >= 0 ? '+' : ''}${dd}`, 157, 168, { size: 7 * SC, color: dd > 0 ? '#7fff8a' : '#ccc' }); itemInfo(it.key, { w: 138 }); } } });
+    const ii = await menu([{ label: T('（卸下）', '(remove)') }, ...opts.map((k) => ({ label: T(ITEMS[k].name), right: short(ITEMS[k]), key: k, tag: gearScore(m, k) > 0 ? '▲' : '' }))], { x: 60, y: 8, info: (it) => { if (it && it.key) { const [da, dd] = gearDiff(m, it.key); box(150, 150, 98, 30); text(`${T('攻', 'ATK')} ${da >= 0 ? '+' : ''}${da}`, 157, 156, { size: 7 * SC, color: da > 0 ? '#7fff8a' : '#ccc' }); text(`${T('防', 'DEF')} ${dd >= 0 ? '+' : ''}${dd}`, 157, 168, { size: 7 * SC, color: dd > 0 ? '#7fff8a' : '#ccc' }); itemInfo(it.key, { w: 138 }); } } });
     if (ii < 0) continue;
     if (ii === 0) { if (m.eq[slot]) { bagAdd(S.bag, m.eq[slot]); m.eq[slot] = null; } } else equip(m, opts[ii - 1]);
   }
@@ -603,7 +605,7 @@ function drawField() {
   else if (MAP.name && ftime - enteredAt < 2.2) { box(8, 8, Math.max(80, UI.measure(T(MAP.name)) + 24), 24); text(T(MAP.name) + (MAP.floor ? ` ${MAP.floor}F` : ''), 18, 14); }
   if (!P.moving && !running && !UI.busy() && idleT > 1.2) {
     const act = S.active.map((id) => S.members[id]), w = Math.min(60, 248 / act.length);
-    act.forEach((m, i) => { const bx = 4 + i * w; box(bx, 196, w - 2, 40); const col = m.hp <= 0 ? '#ff5a5a' : m.hp < m.maxhp / 4 ? '#ffd040' : '#fff'; text(nameOf(m.id).slice(0, EN ? 7 : 4), bx + 6, 201, { color: col, size: 7 * SC }); text(`H ${m.hp}`, bx + 6, 213, { color: col, size: 7 * SC }); text(`M ${m.mp}`, bx + 6, 224, { color: col, size: 7 * SC }); UI.drawTags(UI.statusTags(m), bx + w - 6, [213, 224], w - 14 - UI.measure(`H ${m.hp}`, 7 * SC), 6 * SC); });
+    act.forEach((m, i) => { const bx = 4 + i * w; box(bx, 196, w - 2, 40); const col = m.hp <= 0 ? '#ff5a5a' : m.hp < m.maxhp / 4 ? '#ffd040' : '#fff'; text(UI.fit(nameOf(m.id), w - 12, 7 * SC), bx + 6, 201, { color: col, size: 7 * SC }); text(`H ${m.hp}`, bx + 6, 213, { color: col, size: 7 * SC }); text(`M ${m.mp}`, bx + 6, 224, { color: col, size: 7 * SC }); UI.drawTags(UI.statusTags(m), bx + w - 6, [213, 224], w - 14 - UI.measure(`H ${m.hp}`, 7 * SC), 6 * SC); });
   }
 }
 let enteredAt = 0, idleT = 0;
